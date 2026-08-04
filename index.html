@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#07070c" />
+  <meta name="description" content="Nexus — ИИ-агент для жизни и бизнеса в России: карты, отзывы, бронь, коннекторы MCP." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Nexus — AI Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo"><span>N</span></div>
+        <div class="brand-text">
+          <span class="brand-name">Nexus</span>
+          <span class="brand-tag">MCP Agent</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Для жизни</div>
+        <a class="nav-item active" data-view="chat" href="#chat">
+          <span class="nav-ico">✦</span> Чат
+        </a>
+        <a class="nav-item" data-view="lifestyle" href="#lifestyle">
+          <span class="nav-ico">🏠</span> Бытовая польза
+          <span class="badge badge-new">new</span>
+        </a>
+        <a class="nav-item" data-view="packs" href="#packs">
+          <span class="nav-ico">◈</span> Сценарии
+        </a>
+        <div class="nav-section">Для бизнеса</div>
+        <a class="nav-item" data-view="business" href="#business">
+          <span class="nav-ico">🏪</span> Мой бизнес
+        </a>
+        <a class="nav-item" data-view="connectors" href="#connectors">
+          <span class="nav-ico">⬡</span> Коннекторы
+          <span class="badge" id="conn-badge">0</span>
+        </a>
+        <div class="nav-section">Для разработчиков</div>
+        <a class="nav-item" data-view="builder" href="#builder">
+          <span class="nav-ico">▣</span> Архитектура
+        </a>
+        <a class="nav-item" data-view="pricing" href="#pricing">
+          <span class="nav-ico">◇</span> Тарифы
+        </a>
+        <a class="nav-item" data-view="learn" href="#learn">
+          <span class="nav-ico">◎</span> Обучение
+        </a>
+        <a class="nav-item" data-view="usage" href="#usage">
+          <span class="nav-ico">▤</span> Usage
+        </a>
+        <a class="nav-item" data-view="settings" href="#settings">
+          <span class="nav-ico">⚙</span> Настройки
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-avatar">U</div>
+          <div class="user-meta">
+            <div class="name" id="user-name">Demo User</div>
+            <div class="plan" id="user-plan">Старт · демо</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header class="header">
+      <button class="menu-btn" id="menu-btn" aria-label="Меню">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <div class="header-title" id="header-title">Чат</div>
+      <div class="header-actions">
+        <button class="btn btn-glow btn-sm" id="demo-btn">✦ Демо</button>
+        <button class="theme-toggle" id="theme-toggle" title="Тема" aria-label="Тема">
+          <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- CHAT -->
+      <section class="view active" id="view-chat">
+        <div class="chat-layout">
+          <div class="chat-main">
+            <div class="chat-messages" id="chat-messages">
+              <div class="empty-state" id="empty-state">
+                <div class="hero-orb"><span>✦</span></div>
+                <h2>Один чат. Все сервисы.</h2>
+                <p>Бизнес, Canva, n8n — и быт: еда, такси, салоны. Скажите или напишите.</p>
+                <div class="suggestions">
+                  <button class="suggestion" data-prompt="Какая погода в Москве?">🌤 Погода</button>
+                  <button class="suggestion" data-prompt="Сгенерируй слоган для бренда эко-кофе">✨ Слоган</button>
+                  <button class="suggestion" data-prompt="Найди салон для маникюра завтра после 15:00">💅 Маникюр</button>
+                  <button class="suggestion" data-prompt="Закажи такси домой">🚕 Такси</button>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-wrap">
+              <div class="chat-input-box">
+                <button class="voice-btn" id="voice-btn" title="Голос" aria-label="Голосовой ввод">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+                </button>
+                <textarea id="chat-input" rows="1" placeholder="Напишите или скажите задачу…"></textarea>
+                <button class="send-btn" id="send-btn" aria-label="Отправить">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
+              </div>
+              <div class="voice-hint" id="voice-hint" hidden>Слушаю… говорите</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIFESTYLE -->
+      <section class="view view-scroll" id="view-lifestyle">
+        <div class="page-header">
+          <div>
+            <h1>Бытовая польза</h1>
+            <p>Еда, такси, салоны — заказы голосом и в чате. Локальный бизнес подключается сам.</p>
+          </div>
+        </div>
+        <div class="life-hero glass">
+          <div class="life-hero-text">
+            <h3>Скажите агенту</h3>
+            <p>«Забронируй маникюр на завтра» · «Вызови такси» · «Хочу суши»</p>
+            <button class="btn btn-glow" id="life-voice-cta">🎤 Голосовой заказ</button>
+          </div>
+          <div class="life-hero-visual">🏠</div>
+        </div>
+        <div class="life-grid" id="life-grid">
+          <button class="life-card" data-prompt="Найди свободное окно на маникюр завтра после 15:00">
+            <span class="life-ico">💅</span>
+            <strong>Маникюр / педикюр</strong>
+            <span>Бронь в салоне</span>
+          </button>
+          <button class="life-card" data-prompt="Забронируй столик в ресторане на двоих на 19:00">
+            <span class="life-ico">🍽</span>
+            <strong>Ресторан</strong>
+            <span>Столик на вечер</span>
+          </button>
+          <button class="life-card" data-prompt="Найди барбершоп со стрижкой сегодня">
+            <span class="life-ico">✂</span>
+            <strong>Парикмахерская</strong>
+            <span>Стрижка и борода</span>
+          </button>
+          <button class="life-card" data-prompt="Закажи такси домой">
+            <span class="life-ico">🚕</span>
+            <strong>Такси</strong>
+            <span>Яндекс Go · демо</span>
+          </button>
+          <button class="life-card" data-prompt="Хочу суши на ужин — что есть рядом">
+            <span class="life-ico">🍱</span>
+            <strong>Еда</strong>
+            <span>Доставка · демо</span>
+          </button>
+          <button class="life-card" data-prompt="Найди лучший маникюр с рейтингом от 4.5">
+            <span class="life-ico">🗺</span>
+            <strong>Лучшие по отзывам</strong>
+            <span>Яндекс / 2ГИС</span>
+          </button>
+          <button class="life-card" data-prompt="Покажи мои брони">
+            <span class="life-ico">📋</span>
+            <strong>Мои брони</strong>
+            <span>История заказов</span>
+          </button>
+        </div>
+        <div class="section-card glass">
+          <h3>Как это работает</h3>
+          <ol class="steps-list">
+            <li>Вы говорите или пишете в чат</li>
+            <li>Агент находит бизнес в каталоге Nexus</li>
+            <li>Бронь / заказ подтверждается</li>
+            <li>Предприниматели сами добавляют свои точки</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- BUSINESS (entrepreneurs) -->
+      <section class="view view-scroll" id="view-business">
+        <div class="page-header">
+          <div>
+            <h1>Для малого бизнеса</h1>
+            <p>Подключите салон, ресторан или услугу — клиенты Nexus будут бронировать у вас</p>
+          </div>
+        </div>
+        <div class="biz-form glass" id="biz-form">
+          <h3>Добавить свой бизнес</h3>
+          <label>Название<input id="biz-name" placeholder="Салон «Бархат»" /></label>
+          <label>Тип
+            <select id="biz-type">
+              <option value="salon">Салон красоты</option>
+              <option value="nails">Маникюр / педикюр</option>
+              <option value="barber">Барбершоп</option>
+              <option value="restaurant">Ресторан / кафе</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label>Город<input id="biz-city" placeholder="Москва" value="Москва" /></label>
+          <label>Услуги (через запятую)<input id="biz-services" placeholder="маникюр, педикюр, стрижка" /></label>
+          <label>Слоты (через запятую)<input id="biz-slots" placeholder="10:00, 12:00, 15:00, 18:00" /></label>
+          <label>Контакт<input id="biz-contact" placeholder="Telegram / телефон" /></label>
+          <button class="btn btn-glow" id="biz-submit">Отправить заявку</button>
+          <p class="muted" id="biz-result"></p>
+        </div>
+        <div class="section-card glass">
+          <h3>Зачем это вам</h3>
+          <ul class="check-list">
+            <li>Клиенты приходят голосом и из чата Nexus</li>
+            <li>Без своего приложения и сложной CRM</li>
+            <li>Каталог растёт вместе с платформой</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PACKS -->
+      <section class="view view-scroll" id="view-packs">
+        <div class="page-header">
+          <div>
+            <h1>Готовые сценарии</h1>
+            <p>Связки под SMM, бизнес, маркетплейсы, быт</p>
+          </div>
+        </div>
+        <div class="packs-grid" id="packs-grid"></div>
+      </section>
+
+      <!-- CONNECTORS -->
+      <section class="view view-scroll" id="view-connectors">
+        <div class="page-header">
+          <div>
+            <h1>Коннекторы</h1>
+            <p>MCP-сервисы: демо работают сразу, остальные — после ключа</p>
+          </div>
+          <div class="search-bar">
+            <input type="search" id="conn-search" placeholder="Поиск…" />
+          </div>
+        </div>
+        <div class="cat-tabs" id="cat-tabs"></div>
+        <div class="connectors-grid" id="connectors-grid"></div>
+      </section>
+
+      <!-- BUILDER -->
+      <section class="view view-scroll" id="view-builder">
+        <div class="page-header">
+          <div>
+            <h1>Конструктор</h1>
+            <p>Мозг → коннекторы → результат</p>
+          </div>
+        </div>
+        <div class="builder-canvas glass">
+          <div class="builder-flow" id="builder-flow">
+            <div class="flow-node agent">✦ Nexus</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node tools" id="flow-tools">Tools</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node out">Результат</div>
+          </div>
+          <p class="muted center">Подключите коннекторы — схема обновится</p>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section class="view view-scroll" id="view-pricing">
+        <div class="page-header">
+          <div>
+            <h1>Тарифы</h1>
+            <p>От демо до бизнеса</p>
+          </div>
+        </div>
+        <div class="pricing-grid" id="pricing-grid"></div>
+      </section>
+
+      <!-- LEARN -->
+      <section class="view view-scroll" id="view-learn">
+        <div class="page-header">
+          <div>
+            <h1>Обучение</h1>
+            <p>От простого к сильному</p>
+          </div>
+        </div>
+        <div class="learn-list" id="learn-list"></div>
+      </section>
+
+      <!-- USAGE -->
+      <section class="view view-scroll" id="view-usage">
+        <div class="page-header">
+          <div>
+            <h1>Usage</h1>
+            <p>Вызовы и расходы</p>
+          </div>
+        </div>
+        <div class="usage-cards" id="usage-cards"></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view view-scroll" id="view-settings">
+        <div class="page-header">
+          <div>
+            <h1>Настройки</h1>
+            <p>Ключи, профиль, вход</p>
+          </div>
+        </div>
+        <div class="settings-form glass">
+          <label>Имя<input id="set-name" placeholder="Demo User" /></label>
+          <label>Grok API key (делает агента умным)<input id="set-grok" type="password" placeholder="xai-…" autocomplete="off" /></label>
+          <label>Тариф
+            <select id="set-plan">
+              <option value="free">Старт</option>
+              <option value="creator">Creator</option>
+              <option value="business">Business</option>
+            </select>
+          </label>
+          <div class="row-btns">
+            <button class="btn btn-glow" id="save-settings">Сохранить</button>
+            <button class="btn btn-secondary" type="button" onclick="loginEmail()">Войти по email</button>
+          </div>
+          <p class="muted">Telegram / Canva / Notion — в Коннекторах. Бытовая польза — отдельный раздел.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Onboarding modal -->
+  <div class="ob-backdrop" id="ob-backdrop" hidden>
+    <div class="ob-modal glass">
+      <div class="ob-step" data-ob="0">
+        <div class="hero-orb sm"><span>✦</span></div>
+        <h2>Добро пожаловать в Nexus</h2>
+        <p>Один чат для работы и быта. Без лишних вкладок.</p>
+        <button class="btn btn-glow" data-ob-next>Далее</button>
+      </div>
+      <div class="ob-step" data-ob="1" hidden>
+        <h2>Кто вы?</h2>
+        <div class="ob-roles">
+          <button class="ob-role" data-role="influencer">Инфлюенсер</button>
+          <button class="ob-role" data-role="business">Малый бизнес</button>
+          <button class="ob-role" data-role="everyone">Просто для себя</button>
+        </div>
+      </div>
+      <div class="ob-step" data-ob="2" hidden>
+        <h2>Готово</h2>
+        <p>Нажмите демо или скажите «Закажи такси» / «Слоган для бренда».</p>
+        <button class="btn btn-glow" id="ob-finish">Начать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
