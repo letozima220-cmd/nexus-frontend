@@ -1194,3 +1194,332 @@ button:focus-visible,
   border-radius: 6px;
   font-size: 0.9em;
 }
+/* =========================================================
+   NEXUS 2027 — LIQUID GLASS / GAME HUD LAYER
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root, [data-theme="dark"] {
+  --bg: #05050a;
+  --bg-elevated: #0a0a12;
+  --cyan: #22d3ee;
+  --violet: #8b5cf6;
+  --magenta: #d946ef;
+  --glow-cyan: 0 0 24px rgba(34, 211, 238, 0.45), 0 0 48px rgba(34, 211, 238, 0.15);
+  --glow-violet: 0 0 24px rgba(139, 92, 246, 0.45), 0 0 48px rgba(139, 92, 246, 0.18);
+  --glass: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02));
+  --glass-border: 1px solid rgba(125, 211, 252, 0.28);
+  --font-hud: "Orbitron", var(--font);
+}
+
+/* ---- Ambient 3D space ---- */
+.ambient {
+  background:
+    radial-gradient(ellipse 70% 45% at 15% 0%, rgba(139, 92, 246, 0.28), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 95% 15%, rgba(34, 211, 238, 0.18), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 50% 100%, rgba(217, 70, 239, 0.12), transparent 45%),
+    radial-gradient(circle at 50% 50%, #0a0a14 0%, #05050a 70%) !important;
+  animation: ambientPulse 12s ease-in-out infinite alternate;
+}
+@keyframes ambientPulse {
+  0% { filter: hue-rotate(0deg) saturate(1); }
+  100% { filter: hue-rotate(18deg) saturate(1.15); }
+}
+
+/* floating orbs */
+.ambient::before {
+  content: "";
+  position: fixed;
+  width: 420px; height: 420px;
+  left: -80px; top: 20%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.35), transparent 70%);
+  filter: blur(40px);
+  animation: floatOrb 18s ease-in-out infinite;
+  pointer-events: none;
+}
+.ambient::after {
+  content: "";
+  position: fixed;
+  width: 360px; height: 360px;
+  right: -60px; bottom: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34,211,238,0.28), transparent 70%);
+  filter: blur(36px);
+  animation: floatOrb 22s ease-in-out infinite reverse;
+  pointer-events: none;
+  opacity: 0.9;
+}
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -40px) scale(1.08); }
+}
+
+/* ---- Glass system ---- */
+.glass,
+.settings-form.glass,
+.biz-form.glass,
+.ob-modal.glass,
+.builder-canvas.glass,
+.life-card,
+.msg.assistant,
+.chat-input-box,
+.provider-bar,
+.status-pill,
+.sidebar {
+  background: var(--glass) !important;
+  backdrop-filter: blur(22px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.35) !important;
+  border: var(--glass-border) !important;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 0 0 1px rgba(34, 211, 238, 0.06) !important;
+}
+
+/* ---- Primary / glow buttons (как на референсе) ---- */
+.btn-glow,
+.send-btn,
+.provider-btn.active {
+  background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 40%, #818cf8 100%) !important;
+  color: #041016 !important;
+  border: none !important;
+  font-weight: 700 !important;
+  box-shadow: var(--glow-cyan), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+  text-shadow: none !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+}
+.btn-glow:hover,
+.send-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 32px rgba(34,211,238,0.65), 0 0 64px rgba(139,92,246,0.25) !important;
+}
+.btn-secondary,
+.provider-btn {
+  background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(34,211,238,0.08)) !important;
+  border: 1px solid rgba(167,139,250,0.45) !important;
+  color: #e9d5ff !important;
+  box-shadow: 0 0 16px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+/* ---- Cards 3D tilt feel ---- */
+.life-card,
+.connectors-grid > *,
+.pricing-grid .plan,
+.packs-grid > * {
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s !important;
+  border-radius: 20px !important;
+}
+.life-card:hover,
+.connectors-grid > *:hover,
+.pricing-grid .plan:hover {
+  transform: translateY(-6px) rotateX(4deg) scale(1.02);
+  box-shadow:
+    0 20px 50px rgba(0,0,0,0.45),
+    0 0 30px rgba(34,211,238,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+
+/* ---- Chat messages HUD ---- */
+.msg.user {
+  background: linear-gradient(135deg, rgba(139,92,246,0.55), rgba(34,211,238,0.25)) !important;
+  border: 1px solid rgba(167,139,250,0.5) !important;
+  box-shadow: var(--glow-violet) !important;
+  border-radius: 18px 18px 6px 18px !important;
+}
+.msg.assistant {
+  border-radius: 18px 18px 18px 6px !important;
+  position: relative;
+}
+.msg.assistant::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(34,211,238,0.5), transparent 40%, rgba(139,92,246,0.4));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ---- Input like glass search field ---- */
+.chat-input-box,
+#chat-input {
+  border-radius: 18px !important;
+}
+#chat-input {
+  background: transparent !important;
+  color: #f8fafc !important;
+}
+.chat-input-box:focus-within {
+  box-shadow: var(--glow-cyan) !important;
+  border-color: rgba(34,211,238,0.55) !important;
+}
+
+/* ---- Sidebar brand HUD ---- */
+.sidebar-brand .logo {
+  background: linear-gradient(135deg, #22d3ee, #8b5cf6) !important;
+  box-shadow: var(--glow-cyan) !important;
+  border-radius: 14px !important;
+}
+.brand-name {
+  font-family: var(--font-hud) !important;
+  letter-spacing: 0.08em !important;
+  font-size: 15px !important;
+  background: linear-gradient(90deg, #67e8f9, #c4b5fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.brand-tag {
+  font-family: var(--font-hud) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+  opacity: 0.7;
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(34,211,238,0.15), rgba(139,92,246,0.12)) !important;
+  border: 1px solid rgba(34,211,238,0.3) !important;
+  box-shadow: 0 0 20px rgba(34,211,238,0.12) !important;
+}
+
+/* ---- Founder card ---- */
+.founder-card {
+  margin: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: var(--glass-border);
+  box-shadow: var(--glow-violet);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  transition: transform 0.3s;
+}
+.founder-card:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+.founder-card img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(34,211,238,0.6);
+  box-shadow: 0 0 16px rgba(34,211,238,0.4);
+}
+.founder-card .fc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.founder-card .fc-name {
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #f1f5f9;
+}
+.founder-card .fc-role {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.founder-card .fc-tag {
+  font-size: 10px;
+  color: #67e8f9;
+  margin-top: 2px;
+}
+
+/* ---- Provider bar game-style ---- */
+.provider-bar {
+  gap: 8px !important;
+  padding: 10px 16px 4px !important;
+}
+.provider-btn {
+  font-family: var(--font-hud) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  border-radius: 999px !important;
+  padding: 7px 14px !important;
+}
+.provider-btn.active {
+  color: #041016 !important;
+}
+
+/* ---- Tabbar glow ---- */
+.tab.active {
+  color: #67e8f9 !important;
+  text-shadow: 0 0 12px rgba(34,211,238,0.8);
+  background: rgba(34,211,238,0.1) !important;
+}
+
+/* ---- Status pill ---- */
+.status-pill {
+  font-family: var(--font-hud) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.status-pill .dot {
+  box-shadow: 0 0 10px #34d399;
+  animation: pulseDot 1.6s ease infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.25); }
+}
+
+/* ---- Tool chips neon ---- */
+.tool-chip {
+  font-family: var(--font-hud) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.04em;
+  background: rgba(34,211,238,0.12) !important;
+  border: 1px solid rgba(34,211,238,0.4) !important;
+  box-shadow: 0 0 12px rgba(34,211,238,0.2) !important;
+  color: #a5f3fc !important;
+}
+
+/* ---- Scanline subtle (game HUD) ---- */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.35) 3px
+  );
+}
+
+/* ---- Header title HUD ---- */
+.header-title {
+  font-family: var(--font-hud) !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase;
+  font-size: 13px !important;
+}
+
+/* Mobile glass tabbar */
+.tabbar {
+  background: rgba(5,5,12,0.75) !important;
+  border-top: 1px solid rgba(34,211,238,0.2) !important;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient, .ambient::before, .ambient::after, .status-pill .dot {
+    animation: none !important;
+  }
+}
