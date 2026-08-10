@@ -17,6 +17,8 @@ const state = {
   busy: false,
   obStep: 0,
   obRole: null,
+  provider: localStorage.getItem("nexus-provider") || "auto",
+  chatHistory: JSON.parse(localStorage.getItem("nexus-chat") || "[]"),
 };
 
 const TITLES = {
@@ -300,6 +302,8 @@ async function loadCatalog() {
       { id: "weather", name: "Weather", description: "Погода", category: "demo", icon: "🌤" },
       { id: "geo-ru", name: "Гео РФ", description: "Места", category: "geo", icon: "🗺" },
       { id: "local-booking", name: "Локальный бизнес", description: "Бронь", category: "lifestyle", icon: "🏪" },
+      { id: "grok", name: "Grok by xAI", description: "Мощный LLM от xAI", category: "llm", icon: "⚡" },
+      { id: "canva", name: "Canva", description: "Дизайн и визуал", category: "design", icon: "🎨" },
     ];
     state.presets = [];
   }
@@ -556,9 +560,10 @@ function appendMsg(role, text, tools = [], meta = {}) {
       `</div>`;
   }
   let metaHtml = "";
-  if (meta.provider_used || meta.latency_ms) {
+  if (meta.provider_used || meta.latency_ms || meta.provider) {
     metaHtml = `<div class="meta-row">`;
-    if (meta.provider_used) metaHtml += `<span class="provider-chip">${esc(meta.provider_used)}</span>`;
+    const prov = meta.provider_used || meta.provider;
+    if (prov) metaHtml += `<span class="provider-chip">${esc(prov)}</span>`;
     if (meta.fallback_from) metaHtml += `<span class="latency">${esc(meta.fallback_from)}→</span>`;
     if (meta.latency_ms != null) metaHtml += `<span class="latency">${meta.latency_ms}ms</span>`;
     metaHtml += `</div>`;
@@ -589,35 +594,69 @@ function hideTyping() {
 async function sendMessage() {
   const input = $("#chat-input");
   if (!input) return;
+
   const text = input.value.trim();
   if (!text || state.busy) return;
+
   state.busy = true;
   const sendBtn = $("#send-btn");
   if (sendBtn) sendBtn.disabled = true;
+
   input.value = "";
   input.style.height = "auto";
+
   appendMsg("user", text);
+  state.chatHistory.push({ role: "user", content: text, ts: Date.now() });
+  localStorage.setItem("nexus-chat", JSON.stringify(state.chatHistory));
+
   SFX.send();
   showTyping();
+
   try {
+    const body = { message: text };
+    if (state.provider && state.provider !== "auto") {
+      body.provider = state.provider;
+    }
+
     const res = await api("/api/chat", {
       method: "POST",
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify(body),
     });
+
     hideTyping();
     SFX.success();
+
     appendMsg("assistant", res.reply || "Готово", res.tools_used || [], {
       provider_used: res.provider_used,
       fallback_from: res.fallback_from,
       latency_ms: res.latency_ms,
     });
+
+    state.chatHistory.push({
+      role: "assistant",
+      content: res.reply,
+      tools: res.tools_used || [],
+      meta: {
+        provider: res.provider_used,
+        latency: res.latency_ms,
+      },
+      ts: Date.now(),
+    });
+
+    if (state.chatHistory.length > 50) {
+      state.chatHistory = state.chatHistory.slice(-50);
+    }
+    localStorage.setItem("nexus-chat", JSON.stringify(state.chatHistory));
+
     const st = $("#status-text");
     if (st && res.provider_used) st.textContent = res.provider_used;
+
     loadConnected().catch(() => {});
     loadUsage().catch(() => {});
   } catch (e) {
     hideTyping();
     SFX.error();
+
     if (e.code === "NO_API") {
       appendMsg("assistant", "Backend не подключён. Проверьте Railway URL в app.js.");
     } else {
@@ -631,9 +670,53 @@ async function sendMessage() {
   }
 }
 
+function renderProviderBar() {
+  if ($("#provider-bar")) return;
+
+  const bar = document.createElement("div");
+  bar.className = "provider-bar";
+  bar.id = "provider-bar";
+
+  const providers = [
+    { id: "auto", label: "Auto" },
+    { id: "openrouter", label: "OpenRouter" },
+    { id: "groq", label: "Groq" },
+    { id: "grok", label: "Grok ✦" },
+  ];
+
+  bar.innerHTML = providers
+    .map(
+      (p) =>
+        `<button type="button" class="provider-btn ${state.provider === p.id ? "active" : ""}" data-provider="${p.id}">${p.label}</button>`
+    )
+    .join("");
+
+  bar.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-provider]");
+    if (!btn) return;
+
+    state.provider = btn.dataset.provider;
+    localStorage.setItem("nexus-provider", state.provider);
+
+    $$(".provider-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.provider === state.provider);
+    });
+
+    const label = state.provider === "grok" ? "Grok by xAI" : state.provider;
+    toast(`Провайдер: ${label}`, "success");
+    SFX.toggle();
+  });
+
+  const inputWrap = $(".chat-input-wrap");
+  if (inputWrap) {
+    inputWrap.parentNode.insertBefore(bar, inputWrap);
+  }
+}
+
 function initChat() {
   const input = $("#chat-input");
   const sendBtn = $("#send-btn");
+
   if (input) {
     input.addEventListener("input", () => {
       input.style.height = "auto";
@@ -646,10 +729,12 @@ function initChat() {
       }
     });
   }
+
   sendBtn?.addEventListener("click", (e) => {
     e.preventDefault();
     sendMessage();
   });
+
   $$(".suggestion").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (input) input.value = btn.dataset.prompt || "";
@@ -860,18 +945,44 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
   initBusiness();
   initVoice();
   initSettings();
+
   try {
-    await Promise.all([loadCatalog(), loadSettings(), loadConnected(), loadTools(), loadPacks(), loadPlans(), loadUsage()]);
+    await Promise.all([
+      loadCatalog(),
+      loadSettings(),
+      loadConnected(),
+      loadTools(),
+      loadPacks(),
+      loadPlans(),
+      loadUsage(),
+    ]);
   } catch (e) {
     console.warn(e);
   }
+
   renderConnectors();
   renderPacks();
   renderPricing();
   renderLearn();
   renderUsage();
   renderBuilder();
+
+  // Восстанавливаем историю чата
+  if (state.chatHistory.length > 0) {
+    const box = $("#chat-messages");
+    if (box) {
+      $("#empty-state")?.remove();
+      state.chatHistory.forEach((m) => {
+        appendMsg(m.role, m.content, m.tools || [], m.meta || {});
+      });
+    }
+  }
+
+  // Рисуем переключатель провайдеров
+  renderProviderBar();
+
   showOnboarding();
+
   api("/api/health")
     .then((h) => {
       const st = $("#status-text");
@@ -881,167 +992,6 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
       const st = $("#status-text");
       if (st) st.textContent = "offline";
     });
+
   console.info("Nexus UI ready. API =", API, "GSAP =", Motion.ok(), "SFX =", SFX.on);
 })();
-// Добавить в state
-const state = {
-  // ... существующее
-  provider: localStorage.getItem("nexus-provider") || "auto",
-  chatHistory: JSON.parse(localStorage.getItem("nexus-chat") || "[]"),
-};
-
-// Provider bar (добавить в HTML view-chat после empty-state или перед input)
-function renderProviderBar() {
-  const bar = document.createElement("div");
-  bar.className = "provider-bar";
-  bar.id = "provider-bar";
-  const providers = [
-    { id: "auto", label: "Auto" },
-    { id: "openrouter", label: "OpenRouter" },
-    { id: "groq", label: "Groq" },
-    { id: "grok", label: "Grok" },
-  ];
-  bar.innerHTML = providers.map(p => 
-    `<button class="provider-btn ${state.provider === p.id ? "active" : ""}" data-provider="${p.id}">${p.label}</button>`
-  ).join("");
-  
-  bar.onclick = (e) => {
-    const btn = e.target.closest("[data-provider]");
-    if (!btn) return;
-    state.provider = btn.dataset.provider;
-    localStorage.setItem("nexus-provider", state.provider);
-    $$(".provider-btn").forEach(b => b.classList.toggle("active", b.dataset.provider === state.provider));
-    toast(`Провайдер: ${state.provider}`, "success");
-  };
-  return bar;
-}
-
-// В initChat() после создания input-wrap:
-const inputWrap = $(".chat-input-wrap");
-if (inputWrap && !$("#provider-bar")) {
-  inputWrap.parentNode.insertBefore(renderProviderBar(), inputWrap);
-}
-async function sendMessage() {
-  const input = $("#chat-input");
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text || state.busy) return;
-  
-  state.busy = true;
-  const sendBtn = $("#send-btn");
-  if (sendBtn) sendBtn.disabled = true;
-  input.value = "";
-  input.style.height = "auto";
-  
-  appendMsg("user", text);
-  state.chatHistory.push({ role: "user", content: text, ts: Date.now() });
-  SFX.send();
-  showTyping();
-
-  try {
-    const res = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ 
-        message: text,
-        provider: state.provider === "auto" ? undefined : state.provider
-      }),
-    });
-    hideTyping();
-    SFX.success();
-    
-    appendMsg("assistant", res.reply || "Готово", res.tools_used || [], {
-      provider_used: res.provider_used,
-      fallback_from: res.fallback_from,
-      latency_ms: res.latency_ms,
-    });
-    
-    state.chatHistory.push({ 
-      role: "assistant", 
-      content: res.reply, 
-      tools: res.tools_used,
-      meta: { provider: res.provider_used, latency: res.latency_ms },
-      ts: Date.now() 
-    });
-    
-    // Сохраняем последние 50 сообщений
-    if (state.chatHistory.length > 50) state.chatHistory = state.chatHistory.slice(-50);
-    localStorage.setItem("nexus-chat", JSON.stringify(state.chatHistory));
-    
-    const st = $("#status-text");
-    if (st && res.provider_used) st.textContent = res.provider_used;
-    
-    loadConnected().catch(() => {});
-    loadUsage().catch(() => {});
-  } catch (e) {
-    hideTyping();
-    SFX.error();
-    appendMsg("assistant", "Ошибка: " + e.message);
-    toast(e.message, "error");
-  } finally {
-    state.busy = false;
-    if (sendBtn) sendBtn.disabled = false;
-    input.focus();
-  }
-}
-async function sendMessage() {
-  const input = $("#chat-input");
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text || state.busy) return;
-  
-  state.busy = true;
-  const sendBtn = $("#send-btn");
-  if (sendBtn) sendBtn.disabled = true;
-  input.value = "";
-  input.style.height = "auto";
-  
-  appendMsg("user", text);
-  state.chatHistory.push({ role: "user", content: text, ts: Date.now() });
-  SFX.send();
-  showTyping();
-
-  try {
-    const res = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ 
-        message: text,
-        provider: state.provider === "auto" ? undefined : state.provider
-      }),
-    });
-    hideTyping();
-    SFX.success();
-    
-    appendMsg("assistant", res.reply || "Готово", res.tools_used || [], {
-      provider_used: res.provider_used,
-      fallback_from: res.fallback_from,
-      latency_ms: res.latency_ms,
-    });
-    
-    state.chatHistory.push({ 
-      role: "assistant", 
-      content: res.reply, 
-      tools: res.tools_used,
-      meta: { provider: res.provider_used, latency: res.latency_ms },
-      ts: Date.now() 
-    });
-    
-    // Сохраняем последние 50 сообщений
-    if (state.chatHistory.length > 50) state.chatHistory = state.chatHistory.slice(-50);
-    localStorage.setItem("nexus-chat", JSON.stringify(state.chatHistory));
-    
-    const st = $("#status-text");
-    if (st && res.provider_used) st.textContent = res.provider_used;
-    
-    loadConnected().catch(() => {});
-    loadUsage().catch(() => {});
-  } catch (e) {
-    hideTyping();
-    SFX.error();
-    appendMsg("assistant", "Ошибка: " + e.message);
-    toast(e.message, "error");
-  } finally {
-    state.busy = false;
-    if (sendBtn) sendBtn.disabled = false;
-    input.focus();
-  }
-}
