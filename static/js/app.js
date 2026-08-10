@@ -994,4 +994,15 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
     });
 
   console.info("Nexus UI ready. API =", API, "GSAP =", Motion.ok(), "SFX =", SFX.on);
-})();
+// 3D tilt on lifestyle / connector cards
+document.addEventListener("mousemove", (e) => {
+  const cards = document.querySelectorAll(".life-card, .pricing-grid .plan");
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  const dx = (e.clientX - cx) / cx;
+  const dy = (e.clientY - cy) / cy;
+  cards.forEach((card, i) => {
+    const f = (i % 3) * 0.4 + 0.6;
+    card.style.transform = `perspective(900px) rotateY(${dx * 4 * f}deg) rotateX(${-dy * 3 * f}deg)`;
+  });
+});})();
