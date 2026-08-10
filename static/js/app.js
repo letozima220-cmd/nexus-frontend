@@ -921,3 +921,65 @@ const inputWrap = $(".chat-input-wrap");
 if (inputWrap && !$("#provider-bar")) {
   inputWrap.parentNode.insertBefore(renderProviderBar(), inputWrap);
 }
+async function sendMessage() {
+  const input = $("#chat-input");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text || state.busy) return;
+  
+  state.busy = true;
+  const sendBtn = $("#send-btn");
+  if (sendBtn) sendBtn.disabled = true;
+  input.value = "";
+  input.style.height = "auto";
+  
+  appendMsg("user", text);
+  state.chatHistory.push({ role: "user", content: text, ts: Date.now() });
+  SFX.send();
+  showTyping();
+
+  try {
+    const res = await api("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ 
+        message: text,
+        provider: state.provider === "auto" ? undefined : state.provider
+      }),
+    });
+    hideTyping();
+    SFX.success();
+    
+    appendMsg("assistant", res.reply || "Готово", res.tools_used || [], {
+      provider_used: res.provider_used,
+      fallback_from: res.fallback_from,
+      latency_ms: res.latency_ms,
+    });
+    
+    state.chatHistory.push({ 
+      role: "assistant", 
+      content: res.reply, 
+      tools: res.tools_used,
+      meta: { provider: res.provider_used, latency: res.latency_ms },
+      ts: Date.now() 
+    });
+    
+    // Сохраняем последние 50 сообщений
+    if (state.chatHistory.length > 50) state.chatHistory = state.chatHistory.slice(-50);
+    localStorage.setItem("nexus-chat", JSON.stringify(state.chatHistory));
+    
+    const st = $("#status-text");
+    if (st && res.provider_used) st.textContent = res.provider_used;
+    
+    loadConnected().catch(() => {});
+    loadUsage().catch(() => {});
+  } catch (e) {
+    hideTyping();
+    SFX.error();
+    appendMsg("assistant", "Ошибка: " + e.message);
+    toast(e.message, "error");
+  } finally {
+    state.busy = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+}
