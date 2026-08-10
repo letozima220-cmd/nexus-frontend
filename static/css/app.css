@@ -1101,3 +1101,96 @@ html, body {
     transition-duration: 0.01ms !important;
   }
 }
+/* ===== NEXUS 2026 UPGRADE LAYER ===== */
+
+/* Лучший ambient + noise */
+.ambient::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Интерактивный hero-orb */
+.hero-orb {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: default;
+}
+.hero-orb:hover {
+  transform: scale(1.08) translateY(-4px);
+}
+
+/* Улучшенные tool-chips */
+.tool-chip {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+}
+
+/* Лучший focus */
+button:focus-visible,
+.nav-item:focus-visible,
+.suggestion:focus-visible,
+.life-card:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+/* Provider switcher в чате */
+.provider-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.provider-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--stroke);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.provider-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(34, 211, 238, 0.15));
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.25);
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: skeleton 1.4s ease infinite;
+  border-radius: 12px;
+}
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Markdown support (базовый) */
+.msg.assistant pre {
+  background: rgba(0,0,0,0.35);
+  padding: 12px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  margin: 8px 0;
+}
+.msg.assistant code {
+  font-family: var(--mono);
+  background: rgba(139, 92, 246, 0.15);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
