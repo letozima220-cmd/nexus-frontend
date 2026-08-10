@@ -883,4 +883,41 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
     });
   console.info("Nexus UI ready. API =", API, "GSAP =", Motion.ok(), "SFX =", SFX.on);
 })();
+// Добавить в state
+const state = {
+  // ... существующее
+  provider: localStorage.getItem("nexus-provider") || "auto",
+  chatHistory: JSON.parse(localStorage.getItem("nexus-chat") || "[]"),
+};
 
+// Provider bar (добавить в HTML view-chat после empty-state или перед input)
+function renderProviderBar() {
+  const bar = document.createElement("div");
+  bar.className = "provider-bar";
+  bar.id = "provider-bar";
+  const providers = [
+    { id: "auto", label: "Auto" },
+    { id: "openrouter", label: "OpenRouter" },
+    { id: "groq", label: "Groq" },
+    { id: "grok", label: "Grok" },
+  ];
+  bar.innerHTML = providers.map(p => 
+    `<button class="provider-btn ${state.provider === p.id ? "active" : ""}" data-provider="${p.id}">${p.label}</button>`
+  ).join("");
+  
+  bar.onclick = (e) => {
+    const btn = e.target.closest("[data-provider]");
+    if (!btn) return;
+    state.provider = btn.dataset.provider;
+    localStorage.setItem("nexus-provider", state.provider);
+    $$(".provider-btn").forEach(b => b.classList.toggle("active", b.dataset.provider === state.provider));
+    toast(`Провайдер: ${state.provider}`, "success");
+  };
+  return bar;
+}
+
+// В initChat() после создания input-wrap:
+const inputWrap = $(".chat-input-wrap");
+if (inputWrap && !$("#provider-bar")) {
+  inputWrap.parentNode.insertBefore(renderProviderBar(), inputWrap);
+}
