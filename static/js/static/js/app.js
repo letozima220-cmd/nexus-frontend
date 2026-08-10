@@ -1,6 +1,6 @@
 /**
- * Nexus UI — production-safe SPA
- * Works offline (no API) + with backend when const API is set
+ * Nexus UI — production SPA
+ * Web Audio SFX + GSAP motion + backend v2 (provider, latency, ui)
  */
 const API = "https://nexus-backend-production-9065.up.railway.app";
 
@@ -34,11 +34,11 @@ const TITLES = {
 
 const LEARN = [
   { t: "1. Что такое коннектор?", b: "MCP-сервис: подключили Canva, карты или салон — агент получает tools." },
-  { t: "2. Демо за 30 секунд", b: "Нажмите «✦ Демо» или спросите про погоду / маникюр. Ценность до оплаты." },
-  { t: "3. Бытовая польза", b: "Еда, такси, салоны — голосом и в чате. Лучшие места по отзывам." },
-  { t: "4. Для бизнеса", b: "Раздел «Мой бизнес» — заявка, и клиенты находят вас в поиске." },
-  { t: "5. Grok API", b: "В Настройках вставьте ключ xAI — агент сам выбирает tools." },
-  { t: "6. Безопасность", b: "Ключи не в чат. OAuth у провайдера. На проде — vault и audit." },
+  { t: "2. Демо за 30 секунд", b: "Нажмите «✦ Демо» или спросите про погоду / маникюр." },
+  { t: "3. Бытовая польза", b: "Еда, такси, салоны — голосом и в чате." },
+  { t: "4. Для бизнеса", b: "Раздел «Мой бизнес» — заявка, клиенты находят вас в поиске." },
+  { t: "5. LLM", b: "В чате: «провайдер openrouter» / «провайдер groq»." },
+  { t: "6. Безопасность", b: "Ключи только на сервере. На проде — vault и audit." },
 ];
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -50,6 +50,118 @@ function esc(s) {
   return d.innerHTML;
 }
 
+/* ========== Web Audio SFX ========== */
+const SFX = (() => {
+  let ctx = null;
+  let enabled = localStorage.getItem("nexus-sfx") !== "0";
+
+  function ac() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function tone(freq, dur, type, vol, delay) {
+    if (!enabled) return;
+    try {
+      const c = ac();
+      const t0 = c.currentTime + (delay || 0);
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.07, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g);
+      g.connect(c.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.03);
+    } catch (_) {}
+  }
+
+  return {
+    get on() {
+      return enabled;
+    },
+    set on(v) {
+      enabled = !!v;
+      localStorage.setItem("nexus-sfx", v ? "1" : "0");
+    },
+    unlock() {
+      try {
+        ac();
+      } catch (_) {}
+    },
+    tap() {
+      tone(880, 0.035, "sine", 0.035);
+      tone(1320, 0.025, "sine", 0.018, 0.018);
+    },
+    send() {
+      tone(380, 0.05, "triangle", 0.05);
+      tone(620, 0.07, "sine", 0.035, 0.035);
+    },
+    success() {
+      tone(523.25, 0.07, "sine", 0.05);
+      tone(659.25, 0.09, "sine", 0.04, 0.06);
+      tone(783.99, 0.11, "sine", 0.035, 0.12);
+    },
+    error() {
+      tone(160, 0.14, "sawtooth", 0.035);
+    },
+    toggle() {
+      tone(640, 0.045, "square", 0.025);
+    },
+    soft() {
+      tone(520, 0.04, "sine", 0.02);
+    },
+  };
+})();
+
+document.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (e.target.closest("button, .nav-item, .suggestion, .life-card, .cat-tab, .tab, a.nav-item, .send-btn")) {
+      SFX.unlock();
+      SFX.tap();
+    }
+  },
+  { passive: true }
+);
+
+/* ========== GSAP helpers ========== */
+const Motion = {
+  ok: () => typeof gsap !== "undefined",
+  msgIn(el) {
+    if (!this.ok() || !el) return;
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 14, scale: 0.98 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: "power3.out" }
+    );
+  },
+  fadeIn(el, delay = 0) {
+    if (!this.ok() || !el) return;
+    gsap.fromTo(el, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, delay, ease: "power2.out" });
+  },
+  press(el) {
+    if (!this.ok() || !el) return;
+    gsap.fromTo(el, { scale: 0.96 }, { scale: 1, duration: 0.25, ease: "back.out(2)" });
+  },
+  shake(el) {
+    if (!this.ok() || !el) return;
+    gsap.fromTo(el, { x: -4 }, { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)" });
+  },
+  toast(el) {
+    if (!this.ok() || !el) {
+      el && (el.style.opacity = "1");
+      return;
+    }
+    gsap.fromTo(el, { opacity: 0, y: 16, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" });
+  },
+};
+
+/* ========== Toast ========== */
 function toast(msg, type = "info") {
   const c = $("#toast-wrap");
   if (!c) {
@@ -60,14 +172,25 @@ function toast(msg, type = "info") {
   t.className = `toast ${type}`;
   t.textContent = msg;
   c.appendChild(t);
+  Motion.toast(t);
+  if (type === "success") SFX.success();
+  if (type === "error") SFX.error();
   setTimeout(() => {
-    t.style.opacity = "0";
-    t.style.transition = "opacity .3s";
-    setTimeout(() => t.remove(), 300);
+    if (Motion.ok()) {
+      gsap.to(t, {
+        opacity: 0,
+        y: -8,
+        duration: 0.25,
+        onComplete: () => t.remove(),
+      });
+    } else {
+      t.style.opacity = "0";
+      setTimeout(() => t.remove(), 300);
+    }
   }, 3200);
 }
 
-// ---------- Theme ----------
+/* ========== Theme ========== */
 function setTheme(t) {
   document.documentElement.setAttribute("data-theme", t);
   localStorage.setItem("nexus-theme", t);
@@ -82,12 +205,13 @@ function setTheme(t) {
 function initTheme() {
   setTheme(localStorage.getItem("nexus-theme") || "dark");
   $("#theme-toggle")?.addEventListener("click", () => {
+    SFX.toggle();
     const cur = document.documentElement.getAttribute("data-theme");
     setTheme(cur === "dark" ? "light" : "dark");
   });
 }
 
-// ---------- Nav ----------
+/* ========== Nav ========== */
 function closeSidebar() {
   $("#sidebar")?.classList.remove("open");
   $("#overlay")?.classList.remove("show");
@@ -97,14 +221,18 @@ function showView(name) {
   if (!name || !TITLES[name]) name = "chat";
   $$(".view").forEach((v) => v.classList.remove("active"));
   $$(".nav-item").forEach((n) => n.classList.remove("active"));
+  $$(".tab").forEach((t) => t.classList.remove("active"));
   $(`#view-${name}`)?.classList.add("active");
   $(`.nav-item[data-view="${name}"]`)?.classList.add("active");
+  $(`.tab[data-view="${name}"]`)?.classList.add("active");
   const ht = $("#header-title");
   if (ht) ht.textContent = TITLES[name] || name;
   try {
     history.replaceState(null, "", `#${name}`);
   } catch (_) {}
   closeSidebar();
+  const view = $(`#view-${name}`);
+  if (view) Motion.fadeIn(view);
   if (name === "connectors") renderConnectors();
   if (name === "packs") renderPacks();
   if (name === "pricing") renderPricing();
@@ -121,6 +249,9 @@ function initNav() {
       showView(el.dataset.view);
     });
   });
+  $$(".tab[data-view]").forEach((t) => {
+    t.addEventListener("click", () => showView(t.dataset.view));
+  });
   $("#menu-btn")?.addEventListener("click", () => {
     $("#sidebar")?.classList.toggle("open");
     $("#overlay")?.classList.toggle("show");
@@ -133,10 +264,10 @@ function initNav() {
   });
 }
 
-// ---------- API ----------
+/* ========== API ========== */
 async function api(path, opts = {}) {
   if (!API && path.startsWith("/api/")) {
-    const err = new Error("API не настроен. Укажите backend в app.js (const API).");
+    const err = new Error("API не настроен");
     err.code = "NO_API";
     throw err;
   }
@@ -158,7 +289,7 @@ async function api(path, opts = {}) {
   return data;
 }
 
-// ---------- Data loaders ----------
+/* ========== Loaders ========== */
 async function loadCatalog() {
   try {
     const data = await api("/api/catalog");
@@ -166,9 +297,9 @@ async function loadCatalog() {
     state.presets = data.presets || [];
   } catch {
     state.servers = [
-      { id: "weather", name: "Weather Demo", description: "Демо погоды", category: "demo", icon: "🌤" },
-      { id: "geo-ru", name: "Гео РФ", description: "Поиск по отзывам", category: "geo", icon: "🗺" },
-      { id: "local-booking", name: "Локальный бизнес", description: "Бронь салонов", category: "lifestyle", icon: "🏪" },
+      { id: "weather", name: "Weather", description: "Погода", category: "demo", icon: "🌤" },
+      { id: "geo-ru", name: "Гео РФ", description: "Места", category: "geo", icon: "🗺" },
+      { id: "local-booking", name: "Локальный бизнес", description: "Бронь", category: "lifestyle", icon: "🏪" },
     ];
     state.presets = [];
   }
@@ -186,6 +317,9 @@ async function loadSettings() {
   const up = $("#user-plan");
   if (un) un.textContent = name;
   if (up) up.textContent = plan === "free" ? "Старт · демо" : plan;
+  const st = $("#status-text");
+  if (st && state.settings.providers?.active) st.textContent = state.settings.providers.active;
+  else if (st && state.settings.llm_provider) st.textContent = state.settings.llm_provider;
 }
 
 async function loadConnected() {
@@ -212,8 +346,8 @@ async function loadPacks() {
     state.packs = data.packs || data || [];
   } catch {
     state.packs = [
-      { id: "lifestyle-home", name: "Бытовая польза", description: "Еда, такси, салоны", icon: "🏠" },
-      { id: "smm-starter", name: "SMM Starter", description: "Контент и сторис", icon: "✨" },
+      { id: "lifestyle-home", name: "Бытовая польза", description: "Еда, такси", icon: "🏠" },
+      { id: "smm-starter", name: "SMM Starter", description: "Контент", icon: "✨" },
     ];
   }
 }
@@ -224,9 +358,9 @@ async function loadPlans() {
     state.plans = data.plans || data || [];
   } catch {
     state.plans = [
-      { id: "free", name: "Старт", price: "0 ₽", features: ["Демо-коннекторы", "Чат", "Бытовая польза"] },
-      { id: "creator", name: "Creator", price: "990 ₽", featured: true, features: ["Grok", "Сценарии", "Партнёрка"] },
-      { id: "business", name: "Business", price: "2990 ₽", features: ["Команда", "Приоритет", "Каталог"] },
+      { id: "free", name: "Старт", price: "0 ₽", features: ["Демо", "Чат"] },
+      { id: "creator", name: "Creator", price: "990 ₽", featured: true, features: ["LLM", "Сценарии"] },
+      { id: "business", name: "Business", price: "2990 ₽", features: ["Команда", "Приоритет"] },
     ];
   }
 }
@@ -240,7 +374,7 @@ async function loadUsage() {
   renderUsage();
 }
 
-// ---------- Renderers ----------
+/* ========== Renderers ========== */
 function renderConnectors() {
   const grid = $("#connectors-grid");
   const tabs = $("#cat-tabs");
@@ -265,20 +399,20 @@ function renderConnectors() {
   const filtered = items.filter((s) => {
     if (state.catalogCategory !== "all" && (s.category || "other") !== state.catalogCategory) return false;
     if (!q) return true;
-    const blob = `${s.name} ${s.id} ${s.description || ""}`.toLowerCase();
-    return blob.includes(q);
+    return `${s.name} ${s.id} ${s.description || ""}`.toLowerCase().includes(q);
   });
   const connectedIds = new Set((state.connected || []).map((c) => c.id));
-  grid.innerHTML = filtered
-    .map((s) => {
-      const on = connectedIds.has(s.id);
-      return `<div class="connector-card">
+  grid.innerHTML =
+    filtered
+      .map((s) => {
+        const on = connectedIds.has(s.id);
+        return `<div class="connector-card glass">
         <div class="conn-ico">${s.icon || "⬡"}</div>
         <h3>${esc(s.name || s.id)}</h3>
         <p>${esc(s.description || "")}</p>
         <div class="card-actions">
           ${
-            s.id === "canva" || s.id === "notion"
+            s.id === "canva" || s.id === "notion" || s.auth === "oauth"
               ? `<button type="button" class="btn btn-glow btn-sm" data-oauth="${esc(s.id)}">Войти</button>`
               : on
                 ? `<button type="button" class="btn btn-secondary btn-sm" data-disconnect="${esc(s.id)}">Отключить</button>`
@@ -286,8 +420,10 @@ function renderConnectors() {
           }
         </div>
       </div>`;
-    })
-    .join("") || `<p class="muted">Ничего не найдено</p>`;
+      })
+      .join("") || `<p class="muted">Ничего не найдено</p>`;
+
+  $$(".connector-card", grid).forEach((el, i) => Motion.fadeIn(el, i * 0.04));
 
   grid.onclick = async (e) => {
     const connect = e.target.closest("[data-connect]");
@@ -305,8 +441,15 @@ function renderConnectors() {
         renderConnectors();
         toast("Отключено", "success");
       } else if (oauth) {
-        if (!API) return toast("Нужен backend URL в app.js", "error");
-        location.href = `${API}/api/oauth/${oauth.dataset.oauth}/start`;
+        if (!API) return toast("Нужен backend", "error");
+        if (oauth.dataset.oauth === "notion") {
+          await api("/api/connect/notion", { method: "POST" });
+          await loadConnected();
+          renderConnectors();
+          toast("Notion подключён", "success");
+        } else {
+          location.href = `${API}/api/oauth/${oauth.dataset.oauth}/start`;
+        }
       }
     } catch (err) {
       toast(err.message, "error");
@@ -320,7 +463,7 @@ function renderPacks() {
   if (!state.packs.length) loadPacks().then(renderPacks);
   grid.innerHTML = (state.packs || [])
     .map(
-      (p) => `<div class="pack-card">
+      (p) => `<div class="pack-card glass">
       <div class="pack-ico">${p.icon || "◈"}</div>
       <h3>${esc(p.name)}</h3>
       <p>${esc(p.description || "")}</p>
@@ -347,7 +490,7 @@ function renderPricing() {
   if (!state.plans.length) loadPlans().then(renderPricing);
   grid.innerHTML = (state.plans || [])
     .map(
-      (p) => `<div class="price-card ${p.featured ? "featured" : ""}">
+      (p) => `<div class="price-card glass ${p.featured ? "featured" : ""}">
       <h3>${esc(p.name)}</h3>
       <div class="price">${esc(p.price || p.price_rub || "—")}</div>
       <ul>${(p.features || []).map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
@@ -368,9 +511,7 @@ function renderBuilder() {
 function renderLearn() {
   const list = $("#learn-list");
   if (!list) return;
-  list.innerHTML = LEARN.map(
-    (x) => `<div class="learn-item"><h4>${esc(x.t)}</h4><p>${esc(x.b)}</p></div>`
-  ).join("");
+  list.innerHTML = LEARN.map((x) => `<div class="learn-item glass"><h4>${esc(x.t)}</h4><p>${esc(x.b)}</p></div>`).join("");
 }
 
 function renderUsage() {
@@ -378,10 +519,10 @@ function renderUsage() {
   if (!cards) return;
   const u = state.usage || {};
   cards.innerHTML = `
-    <div class="usage-card"><div class="val">${u.total_calls ?? 0}</div><div class="lbl">Вызовы</div></div>
-    <div class="usage-card"><div class="val">${u.successful_calls ?? 0}</div><div class="lbl">Успешные</div></div>
-    <div class="usage-card"><div class="val">${state.connected?.length ?? 0}</div><div class="lbl">Коннекторы</div></div>
-    <div class="usage-card"><div class="val">$${(u.total_revenue_usd ?? 0).toFixed?.(2) || "0.00"}</div><div class="lbl">Revenue</div></div>`;
+    <div class="usage-card glass"><div class="val">${u.total_calls ?? 0}</div><div class="lbl">Вызовы</div></div>
+    <div class="usage-card glass"><div class="val">${u.successful_calls ?? 0}</div><div class="lbl">Успешные</div></div>
+    <div class="usage-card glass"><div class="val">${state.connected?.length ?? 0}</div><div class="lbl">Коннекторы</div></div>
+    <div class="usage-card glass"><div class="val">$${(u.total_revenue_usd ?? 0).toFixed?.(2) || "0.00"}</div><div class="lbl">Revenue</div></div>`;
 }
 
 function fillSettings() {
@@ -391,31 +532,58 @@ function fillSettings() {
   if (n) n.value = state.settings.display_name || "";
   if (g && state.settings.grok_api_key) g.placeholder = "•••• сохранён";
   if (p) p.value = state.settings.plan_id || "free";
+  const sfxBtn = $("#sfx-toggle");
+  if (sfxBtn) sfxBtn.textContent = `Звук UI: ${SFX.on ? "вкл" : "выкл"}`;
 }
 
-// ---------- Chat ----------
-function appendMsg(role, text, tools = []) {
+/* ========== Chat ========== */
+function appendMsg(role, text, tools = [], meta = {}) {
   const box = $("#chat-messages");
   if (!box) return;
   $("#empty-state")?.remove();
   const div = document.createElement("div");
-  const cls = role === "user" ? "user" : "assistant";
-  div.className = `msg ${cls}`;
+  div.className = `msg ${role === "user" ? "user" : "assistant"}`;
   let toolsHtml = "";
   if (tools?.length) {
     toolsHtml =
       `<div class="tool-chips">` +
       tools
-        .map(
-          (t) =>
-            `<span class="tool-chip ${t.ok === false ? "err" : ""}">${esc(t.server_id)}/${esc(t.name)}</span>`
-        )
+        .map((t) => {
+          const label = t.server_id === "llm" ? `llm/${t.name}` : `${t.server_id}/${t.name}`;
+          return `<span class="tool-chip ${t.ok === false ? "err" : ""}">${esc(label)}</span>`;
+        })
         .join("") +
       `</div>`;
   }
-  div.innerHTML = `${esc(text)}${toolsHtml}`;
+  let metaHtml = "";
+  if (meta.provider_used || meta.latency_ms) {
+    metaHtml = `<div class="meta-row">`;
+    if (meta.provider_used) metaHtml += `<span class="provider-chip">${esc(meta.provider_used)}</span>`;
+    if (meta.fallback_from) metaHtml += `<span class="latency">${esc(meta.fallback_from)}→</span>`;
+    if (meta.latency_ms != null) metaHtml += `<span class="latency">${meta.latency_ms}ms</span>`;
+    metaHtml += `</div>`;
+  }
+  div.innerHTML = `${esc(text).replace(/\n/g, "<br>")}${toolsHtml}${metaHtml}`;
   box.appendChild(div);
+  Motion.msgIn(div);
   box.scrollTop = box.scrollHeight;
+}
+
+function showTyping() {
+  const box = $("#chat-messages");
+  if (!box || $("#typing-ind")) return;
+  $("#empty-state")?.remove();
+  const d = document.createElement("div");
+  d.id = "typing-ind";
+  d.className = "msg assistant";
+  d.innerHTML = `<div class="typing"><i></i><i></i><i></i></div>`;
+  box.appendChild(d);
+  Motion.msgIn(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function hideTyping() {
+  $("#typing-ind")?.remove();
 }
 
 async function sendMessage() {
@@ -429,20 +597,29 @@ async function sendMessage() {
   input.value = "";
   input.style.height = "auto";
   appendMsg("user", text);
+  SFX.send();
+  showTyping();
   try {
     const res = await api("/api/chat", {
       method: "POST",
       body: JSON.stringify({ message: text }),
     });
-    appendMsg("assistant", res.reply || "Готово", res.tools_used || []);
+    hideTyping();
+    SFX.success();
+    appendMsg("assistant", res.reply || "Готово", res.tools_used || [], {
+      provider_used: res.provider_used,
+      fallback_from: res.fallback_from,
+      latency_ms: res.latency_ms,
+    });
+    const st = $("#status-text");
+    if (st && res.provider_used) st.textContent = res.provider_used;
     loadConnected().catch(() => {});
     loadUsage().catch(() => {});
   } catch (e) {
+    hideTyping();
+    SFX.error();
     if (e.code === "NO_API") {
-      appendMsg(
-        "assistant",
-        "UI на Vercel работает, но backend ещё не подключён.\n\n1) Задеплойте API на Railway\n2) В static/js/app.js укажите:\nconst API = \"https://ваш-backend\";\n3) Залейте файл снова.\n\nПока можете листать разделы: Бытовая польза, Мой бизнес, Сценарии."
-      );
+      appendMsg("assistant", "Backend не подключён. Проверьте Railway URL в app.js.");
     } else {
       appendMsg("assistant", "Ошибка: " + e.message);
     }
@@ -481,7 +658,7 @@ function initChat() {
   });
 }
 
-// ---------- Demo ----------
+/* ========== Demo / Onboarding / Lifestyle / Business / Voice / Settings ========== */
 function initDemo() {
   $("#demo-btn")?.addEventListener("click", async () => {
     try {
@@ -491,20 +668,16 @@ function initDemo() {
       showView("chat");
       appendMsg(
         "assistant",
-        "Демо включено. Попробуйте:\n• Какая погода в Токио?\n• Найди лучший маникюр с рейтингом от 4.5\n• Закажи такси домой"
+        "Демо включено. Попробуйте:\n• Какая погода в Токио?\n• Сгенерируй слоган\n• провайдер openrouter"
       );
     } catch (e) {
       showView("chat");
-      appendMsg(
-        "assistant",
-        "Локальное демо UI. Для полного демо нужен backend.\n\nПопробуйте разделы «Бытовая польза» и подсказки ниже — после подключения API запросы пойдут в агент."
-      );
+      appendMsg("assistant", "Локальное демо UI. Нужен backend для полного демо.");
       toast(e.message, "info");
     }
   });
 }
 
-// ---------- Onboarding ----------
 function renderObStep() {
   const bd = $("#ob-backdrop");
   if (!bd) return;
@@ -527,6 +700,7 @@ function finishOb() {
   const bd = $("#ob-backdrop");
   if (bd) bd.hidden = true;
   localStorage.setItem("nexus-ob-done", "1");
+  SFX.success();
   api("/api/onboarding/complete", { method: "POST" }).catch(() => {});
 }
 
@@ -547,7 +721,6 @@ function initOnboarding() {
   $("#ob-finish")?.addEventListener("click", finishOb);
 }
 
-// ---------- Lifestyle / Business / Voice ----------
 function initLifestyle() {
   $("#life-grid")?.addEventListener("click", (e) => {
     const card = e.target.closest(".life-card");
@@ -555,7 +728,7 @@ function initLifestyle() {
     showView("chat");
     const input = $("#chat-input");
     if (input) input.value = card.dataset.prompt || "";
-    setTimeout(() => sendMessage(), 100);
+    setTimeout(() => sendMessage(), 120);
   });
   $("#life-voice-cta")?.addEventListener("click", () => {
     showView("chat");
@@ -574,10 +747,7 @@ function initBusiness() {
       contact: $("#biz-contact")?.value,
     };
     try {
-      const r = await api("/api/business/register", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+      const r = await api("/api/business/register", { method: "POST", body: JSON.stringify(body) });
       const out = $("#biz-result");
       if (out) out.textContent = r.message || "Заявка принята";
       toast("Заявка отправлена", "success");
@@ -593,7 +763,7 @@ function initVoice() {
   const hint = $("#voice-hint");
   if (!btn) return;
   if (!SR) {
-    btn.addEventListener("click", () => toast("Голос: откройте Chrome или Safari", "info"));
+    btn.addEventListener("click", () => toast("Голос: Chrome или Safari", "info"));
     return;
   }
   const rec = new SR();
@@ -627,6 +797,7 @@ function initVoice() {
     listening = true;
     btn.classList.add("listening");
     if (hint) hint.hidden = false;
+    SFX.soft();
     try {
       rec.start();
     } catch (_) {
@@ -652,22 +823,22 @@ function initSettings() {
       toast(e.message, "error");
     }
   });
+  $("#sfx-toggle")?.addEventListener("click", () => {
+    SFX.on = !SFX.on;
+    const b = $("#sfx-toggle");
+    if (b) b.textContent = `Звук UI: ${SFX.on ? "вкл" : "выкл"}`;
+    SFX.toggle();
+  });
 }
 
 window.loginEmail = async function loginEmail() {
   const email = prompt("Email:");
   if (!email) return;
   try {
-    const r = await api("/api/auth/email/start", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
+    const r = await api("/api/auth/email/start", { method: "POST", body: JSON.stringify({ email }) });
     const code = r.demo_code || prompt("Код из письма:");
     if (!code) return;
-    const v = await api("/api/auth/email/verify", {
-      method: "POST",
-      body: JSON.stringify({ email, code }),
-    });
+    const v = await api("/api/auth/email/verify", { method: "POST", body: JSON.stringify({ email, code }) });
     if (v.session_token) localStorage.setItem("nexus-session", v.session_token);
     toast("Вход выполнен", "success");
     await loadSettings();
@@ -678,7 +849,7 @@ window.loginEmail = async function loginEmail() {
 
 $("#conn-search")?.addEventListener("input", () => renderConnectors());
 
-// ---------- Boot ----------
+/* ========== Boot ========== */
 (async function boot() {
   initTheme();
   initNav();
@@ -690,15 +861,7 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
   initVoice();
   initSettings();
   try {
-    await Promise.all([
-      loadCatalog(),
-      loadSettings(),
-      loadConnected(),
-      loadTools(),
-      loadPacks(),
-      loadPlans(),
-      loadUsage(),
-    ]);
+    await Promise.all([loadCatalog(), loadSettings(), loadConnected(), loadTools(), loadPacks(), loadPlans(), loadUsage()]);
   } catch (e) {
     console.warn(e);
   }
@@ -709,5 +872,14 @@ $("#conn-search")?.addEventListener("input", () => renderConnectors());
   renderUsage();
   renderBuilder();
   showOnboarding();
-  console.info("Nexus UI ready. API =", API || "(empty — set backend URL)");
+  api("/api/health")
+    .then((h) => {
+      const st = $("#status-text");
+      if (st) st.textContent = h.llm_provider || h.version || "online";
+    })
+    .catch(() => {
+      const st = $("#status-text");
+      if (st) st.textContent = "offline";
+    });
+  console.info("Nexus UI ready. API =", API, "GSAP =", Motion.ok(), "SFX =", SFX.on);
 })();
