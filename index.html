@@ -3,16 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="theme-color" content="#07070c" />
+  <meta name="theme-color" content="#05050a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Nexus — AI Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/css/app.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
+  <!-- Animated cosmic background -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
   <div class="ambient" aria-hidden="true"></div>
+
   <div class="app" id="app">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
@@ -25,20 +36,20 @@
       <nav class="sidebar-nav">
         <div class="nav-section">Для жизни</div>
         <a class="nav-item active" data-view="chat" href="#chat"><span class="nav-ico">✦</span> Чат</a>
-        <a class="nav-item" data-view="lifestyle" href="#lifestyle"><span class="nav-ico">🏠</span> Бытовая польза<span class="badge badge-new">new</span></a>
-        <a class="nav-item" data-view="packs" href="#packs"><span class="nav-ico">◈</span> Сценарии</a>
+        <a class="nav-item" data-view="lifestyle" href="#lifestyle"><span class="nav-ico">◈</span> Бытовая польза<span class="badge badge-new">new</span></a>
+        <a class="nav-item" data-view="packs" href="#packs"><span class="nav-ico">⬡</span> Сценарии</a>
         <div class="nav-section">Для бизнеса</div>
-        <a class="nav-item" data-view="business" href="#business"><span class="nav-ico">🏪</span> Мой бизнес</a>
-        <a class="nav-item" data-view="connectors" href="#connectors"><span class="nav-ico">⬡</span> Коннекторы<span class="badge" id="conn-badge">0</span></a>
+        <a class="nav-item" data-view="business" href="#business"><span class="nav-ico">◇</span> Мой бизнес</a>
+        <a class="nav-item" data-view="connectors" href="#connectors"><span class="nav-ico">◎</span> Коннекторы<span class="badge" id="conn-badge">0</span></a>
         <div class="nav-section">Система</div>
         <a class="nav-item" data-view="builder" href="#builder"><span class="nav-ico">▣</span> Архитектура</a>
-        <a class="nav-item" data-view="pricing" href="#pricing"><span class="nav-ico">◇</span> Тарифы</a>
-        <a class="nav-item" data-view="learn" href="#learn"><span class="nav-ico">◎</span> Обучение</a>
-        <a class="nav-item" data-view="usage" href="#usage"><span class="nav-ico">▤</span> Usage</a>
+        <a class="nav-item" data-view="pricing" href="#pricing"><span class="nav-ico">▤</span> Тарифы</a>
+        <a class="nav-item" data-view="learn" href="#learn"><span class="nav-ico">◉</span> Обучение</a>
+        <a class="nav-item" data-view="usage" href="#usage"><span class="nav-ico">▦</span> Usage</a>
         <a class="nav-item" data-view="settings" href="#settings"><span class="nav-ico">⚙</span> Настройки</a>
       </nav>
       <div class="sidebar-footer">
-        <div class="user-chip">
+        <div class="user-chip glass">
           <div class="user-avatar">U</div>
           <div class="user-meta">
             <div class="name" id="user-name">Demo User</div>
@@ -50,7 +61,7 @@
 
     <div class="overlay" id="overlay"></div>
 
-    <header class="header">
+    <header class="header glass">
       <button class="menu-btn" id="menu-btn" aria-label="Меню">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
@@ -59,7 +70,6 @@
         <div class="status-pill" id="status-pill"><span class="dot"></span><span id="status-text">online</span></div>
         <button class="btn btn-glow btn-sm" id="demo-btn">✦ Демо</button>
         <button class="theme-toggle" id="theme-toggle" title="Тема" aria-label="Тема">
-          <svg id="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg id="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
       </div>
@@ -69,47 +79,51 @@
       <section class="view active" id="view-chat">
         <div class="chat-layout">
           <div class="chat-main">
+            <!-- Particle Orb Agent -->
             <div class="agent-stage" id="agent-stage">
-              <canvas id="pixel-agent" width="64" height="64"></canvas>
+              <canvas id="orb-canvas"></canvas>
               <div class="agent-caption" id="agent-caption">Nexus</div>
             </div>
+
             <div class="widget-grid" id="hint-widgets">
-              <button type="button" class="widget accent" data-prompt="Кратко: что ты умеешь?">
+              <button type="button" class="widget glass accent" data-prompt="Кратко: что ты умеешь?">
                 <div class="widget-label">Агент</div>
                 <div class="widget-value">Skills</div>
                 <div class="widget-hint">Возможности</div>
               </button>
-              <button type="button" class="widget" data-prompt="провайдер openrouter">
+              <button type="button" class="widget glass" data-prompt="провайдер openrouter">
                 <div class="widget-label">LLM</div>
                 <div class="widget-value">Router</div>
                 <div class="widget-hint">Сменить сеть</div>
               </button>
-              <button type="button" class="widget" data-prompt="Какая погода в Москве?">
+              <button type="button" class="widget glass" data-prompt="Какая погода в Москве?">
                 <div class="widget-label">Быт</div>
                 <div class="widget-value">Weather</div>
                 <div class="widget-hint">Погода</div>
               </button>
-              <button type="button" class="widget" data-prompt="Сгенерируй слоган для эко-бренда">
+              <button type="button" class="widget glass" data-prompt="Сгенерируй слоган для эко-бренда">
                 <div class="widget-label">Контент</div>
                 <div class="widget-value">Copy</div>
                 <div class="widget-hint">Слоган</div>
               </button>
             </div>
+
             <div class="chat-messages" id="chat-messages">
               <div class="empty-state" id="empty-state">
-                <div class="hero-orb"><span>✦</span></div>
+                <div class="hero-orb-mini"></div>
                 <h2>Один чат. Все сервисы.</h2>
-                <p>Пишите задачу — ответ с памятью диалога, chip провайдера и анимацией агента.</p>
+                <p>Пишите задачу — ответ с памятью, tools и анимацией агента.</p>
                 <div class="suggestions">
-                  <button class="suggestion" data-prompt="Привет, кто ты?">✦ Кто ты</button>
-                  <button class="suggestion" data-prompt="провайдер groq">⚡ Groq</button>
-                  <button class="suggestion" data-prompt="провайдер openrouter">⚡ OpenRouter</button>
-                  <button class="suggestion" data-prompt="Какая погода в Москве?">🌤 Погода</button>
+                  <button class="suggestion glass" data-prompt="Привет, кто ты?">✦ Кто ты</button>
+                  <button class="suggestion glass" data-prompt="провайдер groq">⚡ Groq</button>
+                  <button class="suggestion glass" data-prompt="провайдер openrouter">⚡ OpenRouter</button>
+                  <button class="suggestion glass" data-prompt="Какая погода в Москве?">🌤 Погода</button>
                 </div>
               </div>
             </div>
+
             <div class="chat-input-wrap">
-              <div class="chat-input-box">
+              <div class="chat-input-box glass">
                 <button class="voice-btn" id="voice-btn" title="Голос" aria-label="Голос">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
                 </button>
@@ -124,13 +138,14 @@
         </div>
       </section>
 
+      <!-- Остальные view оставляем структуру, стили подтянутся -->
       <section class="view view-scroll" id="view-lifestyle">
         <div class="page-header"><div><h1>Бытовая польза</h1><p>Еда, такси, салоны — в чат</p></div></div>
         <div class="life-grid" id="life-grid">
-          <button class="life-card" data-prompt="Найди маникюр после 15:00"><span class="life-ico">💅</span><strong>Маникюр</strong><span>Бронь</span></button>
-          <button class="life-card" data-prompt="Закажи такси домой"><span class="life-ico">🚕</span><strong>Такси</strong><span>Демо</span></button>
-          <button class="life-card" data-prompt="Хочу суши"><span class="life-ico">🍱</span><strong>Еда</strong><span>Демо</span></button>
-          <button class="life-card" data-prompt="Найди лучший маникюр с рейтингом от 4.5"><span class="life-ico">🗺</span><strong>По отзывам</strong><span>Гео</span></button>
+          <button class="life-card glass" data-prompt="Найди маникюр после 15:00"><span class="life-ico">💅</span><strong>Маникюр</strong><span>Бронь</span></button>
+          <button class="life-card glass" data-prompt="Закажи такси домой"><span class="life-ico">🚕</span><strong>Такси</strong><span>Демо</span></button>
+          <button class="life-card glass" data-prompt="Хочу суши"><span class="life-ico">🍱</span><strong>Еда</strong><span>Демо</span></button>
+          <button class="life-card glass" data-prompt="Найди лучший маникюр с рейтингом от 4.5"><span class="life-ico">🗺</span><strong>По отзывам</strong><span>Гео</span></button>
         </div>
       </section>
 
@@ -157,7 +172,7 @@
       <section class="view view-scroll" id="view-connectors">
         <div class="page-header">
           <div><h1>Коннекторы</h1><p>MCP-сервисы</p></div>
-          <div class="search-bar"><input type="search" id="conn-search" placeholder="Поиск…" /></div>
+          <div class="search-bar glass"><input type="search" id="conn-search" placeholder="Поиск…" /></div>
         </div>
         <div class="cat-tabs" id="cat-tabs"></div>
         <div class="connectors-grid" id="connectors-grid"></div>
@@ -213,17 +228,17 @@
     </main>
   </div>
 
-  <nav class="tabbar" id="tabbar">
+  <nav class="tabbar glass" id="tabbar">
     <button type="button" class="tab active" data-view="chat"><span>✦</span>Чат</button>
-    <button type="button" class="tab" data-view="lifestyle"><span>🏠</span>Быт</button>
-    <button type="button" class="tab" data-view="connectors"><span>⬡</span>Связи</button>
+    <button type="button" class="tab" data-view="lifestyle"><span>◈</span>Быт</button>
+    <button type="button" class="tab" data-view="connectors"><span>◎</span>Связи</button>
     <button type="button" class="tab" data-view="settings"><span>⚙</span>Ещё</button>
   </nav>
 
   <div class="ob-backdrop" id="ob-backdrop" hidden>
     <div class="ob-modal glass">
       <div class="ob-step" data-ob="0">
-        <div class="hero-orb sm"><span>✦</span></div>
+        <div class="hero-orb-mini"></div>
         <h2>Добро пожаловать в Nexus</h2>
         <p>Один чат для работы и быта.</p>
         <button class="btn btn-glow" data-ob-next>Далее</button>
@@ -231,9 +246,9 @@
       <div class="ob-step" data-ob="1" hidden>
         <h2>Кто вы?</h2>
         <div class="ob-roles">
-          <button class="ob-role" data-role="influencer">Инфлюенсер</button>
-          <button class="ob-role" data-role="business">Бизнес</button>
-          <button class="ob-role" data-role="everyone">Для себя</button>
+          <button class="ob-role glass" data-role="influencer">Инфлюенсер</button>
+          <button class="ob-role glass" data-role="business">Бизнес</button>
+          <button class="ob-role glass" data-role="everyone">Для себя</button>
         </div>
       </div>
       <div class="ob-step" data-ob="2" hidden>
@@ -245,7 +260,9 @@
   </div>
 
   <div class="toast-wrap" id="toast-wrap"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script type="module" src="/static/js/orb.js"></script>
   <script src="/static/js/app.js"></script>
 </body>
 </html>
