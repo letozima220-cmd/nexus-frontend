@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#07070c" />
-  <meta name="description" content="Nexus — ИИ-агент для жизни и бизнеса" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Nexus — AI Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -70,15 +69,41 @@
       <section class="view active" id="view-chat">
         <div class="chat-layout">
           <div class="chat-main">
+            <div class="agent-stage" id="agent-stage">
+              <canvas id="pixel-agent" width="64" height="64"></canvas>
+              <div class="agent-caption" id="agent-caption">Nexus</div>
+            </div>
+            <div class="widget-grid" id="hint-widgets">
+              <button type="button" class="widget accent" data-prompt="Кратко: что ты умеешь?">
+                <div class="widget-label">Агент</div>
+                <div class="widget-value">Skills</div>
+                <div class="widget-hint">Возможности</div>
+              </button>
+              <button type="button" class="widget" data-prompt="провайдер openrouter">
+                <div class="widget-label">LLM</div>
+                <div class="widget-value">Router</div>
+                <div class="widget-hint">Сменить сеть</div>
+              </button>
+              <button type="button" class="widget" data-prompt="Какая погода в Москве?">
+                <div class="widget-label">Быт</div>
+                <div class="widget-value">Weather</div>
+                <div class="widget-hint">Погода</div>
+              </button>
+              <button type="button" class="widget" data-prompt="Сгенерируй слоган для эко-бренда">
+                <div class="widget-label">Контент</div>
+                <div class="widget-value">Copy</div>
+                <div class="widget-hint">Слоган</div>
+              </button>
+            </div>
             <div class="chat-messages" id="chat-messages">
               <div class="empty-state" id="empty-state">
                 <div class="hero-orb"><span>✦</span></div>
                 <h2>Один чат. Все сервисы.</h2>
-                <p>Скажите или напишите задачу — OpenRouter / Groq и tools на backend.</p>
+                <p>Пишите задачу — ответ с памятью диалога, chip провайдера и анимацией агента.</p>
                 <div class="suggestions">
                   <button class="suggestion" data-prompt="Привет, кто ты?">✦ Кто ты</button>
-                  <button class="suggestion" data-prompt="провайдер openrouter">⚡ OpenRouter</button>
                   <button class="suggestion" data-prompt="провайдер groq">⚡ Groq</button>
+                  <button class="suggestion" data-prompt="провайдер openrouter">⚡ OpenRouter</button>
                   <button class="suggestion" data-prompt="Какая погода в Москве?">🌤 Погода</button>
                 </div>
               </div>
@@ -110,8 +135,8 @@
       </section>
 
       <section class="view view-scroll" id="view-business">
-        <div class="page-header"><div><h1>Для бизнеса</h1><p>Заявка в каталог Nexus</p></div></div>
-        <div class="biz-form glass" id="biz-form">
+        <div class="page-header"><div><h1>Для бизнеса</h1><p>Заявка в каталог</p></div></div>
+        <div class="biz-form glass">
           <h3>Добавить бизнес</h3>
           <label>Название<input id="biz-name" placeholder="Салон «Бархат»" /></label>
           <label>Тип<select id="biz-type"><option value="salon">Салон</option><option value="restaurant">Ресторан</option><option value="other">Другое</option></select></label>
@@ -125,13 +150,13 @@
       </section>
 
       <section class="view view-scroll" id="view-packs">
-        <div class="page-header"><div><h1>Сценарии</h1><p>Готовые пакеты</p></div></div>
+        <div class="page-header"><div><h1>Сценарии</h1></div></div>
         <div class="packs-grid" id="packs-grid"></div>
       </section>
 
       <section class="view view-scroll" id="view-connectors">
         <div class="page-header">
-          <div><h1>Коннекторы</h1><p>MCP и сервисы</p></div>
+          <div><h1>Коннекторы</h1><p>MCP-сервисы</p></div>
           <div class="search-bar"><input type="search" id="conn-search" placeholder="Поиск…" /></div>
         </div>
         <div class="cat-tabs" id="cat-tabs"></div>
@@ -139,9 +164,9 @@
       </section>
 
       <section class="view view-scroll" id="view-builder">
-        <div class="page-header"><div><h1>Архитектура</h1><p>Агент → tools → ответ</p></div></div>
+        <div class="page-header"><div><h1>Архитектура</h1></div></div>
         <div class="builder-canvas glass">
-          <div class="builder-flow" id="builder-flow">
+          <div class="builder-flow">
             <div class="flow-node agent">✦ Nexus</div>
             <div class="flow-arrow">→</div>
             <div class="flow-node tools" id="flow-tools">Tools</div>
@@ -213,7 +238,7 @@
       </div>
       <div class="ob-step" data-ob="2" hidden>
         <h2>Готово</h2>
-        <p>Попробуйте демо или «провайдер openrouter».</p>
+        <p>Нажмите Демо или напишите в чат.</p>
         <button class="btn btn-glow" id="ob-finish">Начать</button>
       </div>
     </div>
