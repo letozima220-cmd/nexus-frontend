@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
+<meta name="theme-color" content="#05050a"/>
+<title>Nexus — AI Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--font:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;--mono:ui-monospace,monospace;--bg:#05050a;--text:rgba(255,255,255,.96);--muted:rgba(255,255,255,.52);--faint:rgba(255,255,255,.3);--accent:#7c6cff;--cyan:#22d3ee;--ok:#34d399;--err:#f87171;--glass:rgba(16,16,26,.62);--glass2:rgba(12,12,20,.82);--stroke:rgba(255,255,255,.12);--r:18px;--pill:999px;--shadow:0 12px 40px rgba(0,0,0,.45);--glow:0 0 36px rgba(124,108,255,.28)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.011em}
+button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;border:none;background:none}a{color:inherit;text-decoration:none}[hidden]{display:none!important}
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 90% 55% at 50% -15%,rgba(124,108,255,.32),transparent 55%),radial-gradient(ellipse 50% 40% at 100% 10%,rgba(34,211,238,.12),transparent 50%),var(--bg)}
+.app{position:relative;z-index:1;min-height:100%;display:flex;flex-direction:column;max-width:920px;margin:0 auto}
+.header{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));position:sticky;top:0;z-index:40;background:rgba(5,5,10,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--stroke)}
+.menu-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--stroke)}
+.header-title{flex:1;font-weight:600;font-size:17px;letter-spacing:-.03em}
+.header-actions{display:flex;align-items:center;gap:8px}
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:var(--pill);background:var(--glass);border:1px solid var(--stroke);color:var(--muted)}
+.status-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.status-pill.off .dot{background:var(--err);box-shadow:0 0 8px var(--err)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:var(--pill);font-weight:600;font-size:14px;border:1px solid var(--stroke);background:var(--glass)}
+.btn-glow{background:linear-gradient(135deg,#6d5efc,#4f46e5 50%,#22d3ee 180%);border-color:rgba(255,255,255,.18);color:#fff;box-shadow:0 8px 28px rgba(79,70,229,.4)}
+.btn-sm{padding:8px 12px;font-size:13px}.btn:active{transform:scale(.97)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:min(300px,88vw);z-index:60;background:#0a0a12;border-right:1px solid var(--stroke);transform:translateX(-105%);transition:transform .25s ease;padding:18px 14px;display:flex;flex-direction:column;gap:8px}
+.sidebar.open{transform:none;box-shadow:12px 0 48px rgba(0,0,0,.5)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--cyan));box-shadow:var(--glow)}
+.brand b{display:block;font-size:15px}.brand span{font-size:12px;color:var(--muted)}
+.nav-sec{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin:10px 6px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;color:var(--muted);font-weight:500;font-size:14px}
+.nav-item.active,.nav-item:hover{background:rgba(124,108,255,.14);color:var(--text)}
+.badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:var(--pill);background:rgba(124,108,255,.35);color:#fff;font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;min-height:0;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+.view{display:none;flex:1;flex-direction:column;min-height:0}.view.active{display:flex}
+.view-scroll{overflow:auto;padding:12px 14px 24px}
+.avatar-stage{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 16px 6px}
+.avatar-frame{width:108px;height:108px;border-radius:28px;position:relative;overflow:hidden;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.22),transparent 42%),linear-gradient(150deg,rgba(124,108,255,.4),rgba(34,211,238,.15));border:1px solid rgba(255,255,255,.16);box-shadow:var(--glow),0 16px 48px rgba(0,0,0,.5)}
+.avatar-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:42px}
+.avatar-stage[data-state="idle"] .avatar-frame{animation:breath 4s ease-in-out infinite}
+.avatar-stage[data-state="thinking"] .avatar-frame{box-shadow:0 0 0 2px rgba(34,211,238,.4),var(--glow);animation:pulse 1.1s ease-in-out infinite}
+.avatar-stage[data-state="speaking"] .avatar-frame{box-shadow:0 0 0 2px rgba(124,108,255,.55),0 0 48px rgba(124,108,255,.35)}
+@keyframes breath{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.02)}}
+@keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+.avatar-cap{font-size:13px;color:var(--muted);font-weight:500}.avatar-cap b{color:var(--text);font-weight:600}
+.hero-text{text-align:center;padding:4px 24px 10px}.hero-text h1{font-size:22px;font-weight:600;letter-spacing:-.03em}.hero-text p{margin-top:6px;font-size:14px;color:var(--muted)}
+.widget-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 14px 12px}
+.widget{text-align:left;padding:14px;min-height:88px;border-radius:var(--r);background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.widget:active{transform:scale(.98)}.widget.accent{border-color:rgba(124,108,255,.4);background:linear-gradient(160deg,rgba(124,108,255,.22),rgba(16,16,26,.5))}
+.w-label{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.w-value{font-size:19px;font-weight:600;letter-spacing:-.03em}.w-hint{margin-top:5px;font-size:12px;color:var(--muted)}
+.chat-messages{flex:1;overflow:auto;padding:8px 14px 12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:min(92%,520px);padding:12px 14px;font-size:15px;line-height:1.45;animation:msgIn .4s cubic-bezier(.22,1,.36,1) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.msg.user{margin-left:auto;border-radius:20px 20px 6px 20px;background:linear-gradient(135deg,#6d5efc,#4f46e5);border:1px solid rgba(255,255,255,.14)}
+.msg.assistant{margin-right:auto;border-radius:20px 20px 20px 6px;background:var(--glass2);border:1px solid var(--stroke);backdrop-filter:blur(16px)}
+.meta-row,.tool-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tool-chip,.provider-chip{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:8px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.28);color:#67e8f9}
+.tool-chip.err{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#fca5a5}
+.latency{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.card-grid{display:grid;gap:8px;margin-top:10px}.res-card{padding:12px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--stroke)}
+.rc-title{font-weight:600;font-size:14px}.rc-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.typing{display:inline-flex;gap:5px;padding:4px 2px}.typing i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.45);animation:ty 1.1s ease infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes ty{0%,60%,100%{opacity:.35}30%{transform:translateY(-4px);opacity:1}}
+.chat-input-wrap{padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(5,5,10,.95),transparent)}
+.chat-input-box{display:flex;align-items:flex-end;gap:8px;padding:8px 10px;border-radius:26px;background:var(--glass2);border:1px solid var(--stroke);backdrop-filter:blur(24px);box-shadow:var(--shadow),var(--glow)}
+#chat-input{flex:1;border:0;background:transparent;resize:none;max-height:120px;padding:8px 4px;font-size:16px;outline:none}
+#chat-input::placeholder{color:var(--faint)}
+.voice-btn,.send-btn{width:42px;height:42px;border-radius:15px;display:grid;place-items:center;flex-shrink:0}
+.voice-btn{color:var(--muted)}.voice-btn.listening{color:var(--cyan);background:rgba(34,211,238,.12)}
+.send-btn{background:linear-gradient(135deg,#6d5efc,#4f46e5);color:#fff}.send-btn:disabled{opacity:.45}
+.page-header{margin-bottom:14px}.page-header h1{font-size:24px;font-weight:600;letter-spacing:-.03em}.page-header p{margin-top:4px;color:var(--muted);font-size:14px}
+.life-grid,.packs-grid,.connectors-grid,.pricing-grid,.usage-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.life-card,.pack-card,.connector-card,.price-card,.learn-item,.usage-card,.glass-panel{padding:14px;border-radius:var(--r);background:var(--glass);border:1px solid var(--stroke);text-align:left}
+.life-card strong,.pack-card h3,.connector-card h3{display:block;font-size:15px;font-weight:600;margin:6px 0 2px}
+.life-card span,.pack-card p,.connector-card p{font-size:12px;color:var(--muted)}.life-ico,.conn-ico{font-size:22px}
+.glass-panel label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.glass-panel input,.glass-panel select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--stroke);background:rgba(0,0,0,.25);outline:none}
+.row-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.cat-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:10px}.cat-tab{padding:8px 12px;border-radius:var(--pill);font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--stroke);white-space:nowrap}
+.cat-tab.active{color:#fff;background:rgba(124,108,255,.25);border-color:rgba(124,108,255,.45)}
+.usage-card .val{font-size:22px;font-weight:600}.usage-card .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.learn-item{margin-bottom:8px}.learn-item h4{font-size:14px;font-weight:600;margin-bottom:4px}.learn-item p{font-size:13px;color:var(--muted)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;justify-content:space-around;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:rgba(8,8,14,.88);backdrop-filter:blur(22px);border-top:1px solid var(--stroke)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:14px;font-size:10px;font-weight:600;color:var(--faint)}.tab span{font-size:16px}.tab.active{color:#c4b5fd;background:rgba(124,108,255,.14)}
+.ob-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);backdrop-filter:blur(16px);display:grid;place-items:center;padding:20px}
+.ob-backdrop[hidden],.ob-step[hidden]{display:none!important}
+.ob-modal{max-width:380px;width:100%;padding:28px 22px;border-radius:26px;text-align:center;background:var(--glass2);border:1px solid var(--stroke);box-shadow:var(--shadow)}
+.ob-modal h2{font-size:22px;font-weight:600;letter-spacing:-.03em;margin:12px 0 8px}.ob-modal p{color:var(--muted);font-size:14px;margin-bottom:18px}
+.ob-roles{display:flex;flex-direction:column;gap:8px}.ob-role{padding:14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.04);font-weight:600}
+.toast-wrap{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px}
+.toast{padding:11px 16px;border-radius:14px;font-size:13px;font-weight:500;background:var(--glass2);border:1px solid var(--stroke)}
+.toast.error{border-color:rgba(248,113,113,.4)}.toast.success{border-color:rgba(52,211,153,.35)}
+@media(min-width:860px){.sidebar{transform:none;position:sticky;height:100vh}.overlay{display:none!important}.app{display:grid;grid-template-columns:280px 1fr;max-width:1200px}.menu-btn{display:none}.main{padding-bottom:24px}.tabbar{display:none}}
+@media(prefers-reduced-motion:reduce){.avatar-frame,.msg{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="overlay" id="overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="logo">N</div><div><b>Nexus</b><span>MCP Agent</span></div></div>
+  <div class="nav-sec">Для жизни</div>
+  <a class="nav-item active" data-view="chat" href="#chat">✦ Чат</a>
+  <a class="nav-item" data-view="lifestyle" href="#lifestyle">🏠 Бытовая польза</a>
+  <a class="nav-item" data-view="packs" href="#packs">◈ Сценарии</a>
+  <div class="nav-sec">Для бизнеса</div>
+  <a class="nav-item" data-view="business" href="#business">🏪 Мой бизнес</a>
+  <a class="nav-item" data-view="connectors" href="#connectors">⬡ Коннекторы <span class="badge" id="conn-badge">0</span></a>
+  <div class="nav-sec">Система</div>
+  <a class="nav-item" data-view="pricing" href="#pricing">◇ Тарифы</a>
+  <a class="nav-item" data-view="learn" href="#learn">◎ Обучение</a>
+  <a class="nav-item" data-view="usage" href="#usage">▤ Usage</a>
+  <a class="nav-item" data-view="settings" href="#settings">⚙ Настройки</a>
+</aside>
+<div class="app">
+  <header class="header">
+    <button class="menu-btn" id="menu-btn" type="button">☰</button>
+    <div class="header-title" id="header-title">Чат</div>
+    <div class="header-actions">
+      <div class="status-pill off" id="status-pill"><span class="dot"></span><span id="status-text">…</span></div>
+      <button class="btn btn-glow btn-sm" id="demo-btn" type="button">✦ Демо</button>
+    </div>
+  </header>
+  <main class="main">
+    <section class="view active" id="view-chat">
+      <div class="avatar-stage" id="avatar-stage" data-state="idle">
+        <div class="avatar-frame"><div class="avatar-fallback">✦</div></div>
+        <div class="avatar-cap"><b>Nexus</b> · на связи</div>
+      </div>
+      <div class="hero-text" id="hero-text"><h1>Один чат. Все сервисы.</h1><p>Агент с tools, карточками и памятью диалога.</p></div>
+      <div class="widget-grid" id="hint-widgets">
+        <button type="button" class="widget accent" data-prompt="Кратко: что ты умеешь?"><div class="w-label">Агент</div><div class="w-value">Skills</div><div class="w-hint">Возможности</div></button>
+        <button type="button" class="widget" data-prompt="провайдер openrouter"><div class="w-label">LLM</div><div class="w-value">Router</div><div class="w-hint">Сменить сеть</div></button>
+        <button type="button" class="widget" data-prompt="Какая погода в Москве?"><div class="w-label">Быт</div><div class="w-value">Weather</div><div class="w-hint">Погода</div></button>
+        <button type="button" class="widget" data-prompt="Сгенерируй слоган для эко-бренда"><div class="w-label">Контент</div><div class="w-value">Copy</div><div class="w-hint">Слоган</div></button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-wrap">
+        <div class="chat-input-box">
+          <button class="voice-btn" id="voice-btn" type="button">🎤</button>
+          <textarea id="chat-input" rows="1" placeholder="Напишите или скажите задачу…"></textarea>
+          <button class="send-btn" id="send-btn" type="button">➤</button>
+        </div>
+      </div>
+    </section>
+    <section class="view view-scroll" id="view-lifestyle">
+      <div class="page-header"><h1>Бытовая польза</h1><p>Еда, такси, салоны — в чат</p></div>
+      <div class="life-grid">
+        <button class="life-card" data-prompt="Найди маникюр после 15:00"><span class="life-ico">💅</span><strong>Маникюр</strong><span>Бронь</span></button>
+        <button class="life-card" data-prompt="Закажи такси домой"><span class="life-ico">🚕</span><strong>Такси</strong><span>Демо</span></button>
+        <button class="life-card" data-prompt="Хочу суши"><span class="life-ico">🍱</span><strong>Еда</strong><span>Демо</span></button>
+        <button class="life-card" data-prompt="Найди лучший маникюр с рейтингом от 4.5"><span class="life-ico">🗺</span><strong>По отзывам</strong><span>Гео</span></button>
+      </div>
+    </section>
+    <section class="view view-scroll" id="view-business">
+      <div class="page-header"><h1>Для бизнеса</h1><p>Заявка в каталог</p></div>
+      <div class="glass-panel">
+        <label>Название</label><input id="biz-name" placeholder="Салон"/>
+        <label>Тип</label><select id="biz-type"><option value="salon">Салон</option><option value="other">Другое</option></select>
+        <label>Город</label><input id="biz-city" value="Москва"/>
+        <label>Услуги</label><input id="biz-services"/>
+        <label>Контакт</label><input id="biz-contact"/>
+        <div class="row-btns"><button class="btn btn-glow" id="biz-submit" type="button">Отправить</button></div>
+        <p id="biz-result" style="margin-top:10px;font-size:13px;color:var(--muted)"></p>
+      </div>
+    </section>
+    <section class="view view-scroll" id="view-packs"><div class="page-header"><h1>Сценарии</h1></div><div class="packs-grid" id="packs-grid"></div></section>
+    <section class="view view-scroll" id="view-connectors"><div class="page-header"><h1>Коннекторы</h1></div><div class="cat-tabs" id="cat-tabs"></div><div class="connectors-grid" id="connectors-grid"></div></section>
+    <section class="view view-scroll" id="view-pricing"><div class="page-header"><h1>Тарифы</h1></div><div class="pricing-grid" id="pricing-grid"></div></section>
+    <section class="view view-scroll" id="view-learn"><div class="page-header"><h1>Обучение</h1></div><div id="learn-list"></div></section>
+    <section class="view view-scroll" id="view-usage"><div class="page-header"><h1>Usage</h1></div><div class="usage-cards" id="usage-cards"></div></section>
+    <section class="view view-scroll" id="view-settings">
+      <div class="page-header"><h1>Настройки</h1></div>
+      <div class="glass-panel">
+        <label>Имя</label><input id="set-name"/>
+        <label>Grok API key</label><input id="set-grok" type="password" autocomplete="off"/>
+        <label>Тариф</label><select id="set-plan"><option value="free">Старт</option><option value="creator">Creator</option><option value="business">Business</option></select>
+        <div class="row-btns"><button class="btn btn-glow" id="save-settings" type="button">Сохранить</button><button class="btn" id="sfx-toggle" type="button">Звук: вкл</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<nav class="tabbar">
+  <button type="button" class="tab active" data-view="chat"><span>✦</span>Чат</button>
+  <button type="button" class="tab" data-view="lifestyle"><span>🏠</span>Быт</button>
+  <button type="button" class="tab" data-view="connectors"><span>⬡</span>Связи</button>
+  <button type="button" class="tab" data-view="settings"><span>⚙</span>Ещё</button>
+</nav>
+<div class="ob-backdrop" id="ob-backdrop" hidden>
+  <div class="ob-modal">
+    <div class="ob-step" data-ob="0"><div class="avatar-frame" style="width:72px;height:72px;margin:0 auto;border-radius:20px"><div class="avatar-fallback">✦</div></div><h2>Добро пожаловать в Nexus</h2><p>AI-агент для работы и быта.</p><button type="button" class="btn btn-glow" data-ob-next>Далее</button></div>
+    <div class="ob-step" data-ob="1" hidden><h2>Кто вы?</h2><div class="ob-roles"><button type="button" class="ob-role" data-role="influencer">Инфлюенсер</button><button type="button" class="ob-role" data-role="business">Бизнес</button><button type="button" class="ob-role" data-role="everyone">Для себя</button></div></div>
+    <div class="ob-step" data-ob="2" hidden><h2>Готово</h2><p>Нажмите Демо или напишите в чат.</p><button type="button" class="btn btn-glow" id="ob-finish" onclick="window.finishOb&&window.finishOb()">Начать</button></div>
+  </div>
+</div>
+<div class="toast-wrap" id="toast-wrap"></div>
+<script>
+
+const API = window.NEXUS_API || "https://nexus-backend-production-9065.up.railway.app";
+const state = { connected:[], servers:[], presets:[], packs:[], plans:[], usage:null, settings:{}, catalogCategory:"all", busy:false, obStep:0 };
+const TITLES = { chat:"Чат", lifestyle:"Бытовая польза", packs:"Сценарии", connectors:"Коннекторы", business:"Мой бизнес", pricing:"Тарифы", learn:"Обучение", usage:"Usage", settings:"Настройки" };
+const LEARN = [
+  {t:"1. Чат",b:"Задача → ответ с tools и карточками."},
+  {t:"2. Провайдер",b:"провайдер openrouter / groq / grok"},
+  {t:"3. Демо",b:"Кнопка ✦ Демо подключает tools."},
+  {t:"4. Быт",b:"Карточки шлют промпт в чат."},
+  {t:"5. Аватар",b:"Слот готов под живые модели."}
+];
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>{const d=document.createElement("div");d.textContent=s??"";return d.innerHTML};
+
+const SFX=(()=>{let ctx=null,on=localStorage.getItem("nexus-sfx")!=="0";
+  const ac=()=>{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();return ctx};
+  const tone=(f,dur,type,vol,delay)=>{if(!on)return;try{const c=ac(),t0=c.currentTime+(delay||0),o=c.createOscillator(),g=c.createGain();
+    o.type=type||"sine";o.frequency.setValueAtTime(f,t0);g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol||0.06,t0+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+dur+0.02)}catch(e){}};
+  return{get on(){return on},set on(v){on=!!v;localStorage.setItem("nexus-sfx",v?"1":"0")},
+    unlock(){try{ac()}catch(e){}},tap(){tone(880,.03,"sine",.03)},send(){tone(380,.05,"triangle",.045)},
+    success(){tone(523,.06,"sine",.04);tone(659,.08,"sine",.03,.05)},error(){tone(160,.12,"sawtooth",.03)},soft(){tone(520,.04,"sine",.018)}};
+})();
+document.addEventListener("pointerdown",e=>{if(e.target.closest("button,.nav-item,.widget,.life-card,.tab,.cat-tab")){SFX.unlock();SFX.tap()}},{passive:true});
+
+function toast(msg,type="info"){const c=$("#toast-wrap");if(!c)return;const t=document.createElement("div");t.className=`toast ${type}`;t.textContent=msg;c.appendChild(t);if(type==="success")SFX.success();if(type==="error")SFX.error();setTimeout(()=>t.remove(),3200)}
+function setOnline(ok,text){const pill=$("#status-pill"),st=$("#status-text");if(pill)pill.classList.toggle("off",!ok);if(st)st.textContent=text||(ok?"online":"offline")}
+function setAvatarState(s){const el=$("#avatar-stage");if(el)el.dataset.state=s||"idle";const cap=$(".avatar-cap");if(cap)cap.innerHTML=s==="thinking"?"<b>Nexus</b> · думает":s==="speaking"?"<b>Nexus</b> · отвечает":"<b>Nexus</b> · на связи"}
+function closeSidebar(){$("#sidebar")?.classList.remove("open");$("#overlay")?.classList.remove("show")}
+function showView(name){if(!TITLES[name])name="chat";$$(".view").forEach(v=>v.classList.remove("active"));$$(".nav-item").forEach(n=>n.classList.remove("active"));$$(".tab").forEach(t=>t.classList.remove("active"));
+  $(`#view-${name}`)?.classList.add("active");$(`.nav-item[data-view="${name}"]`)?.classList.add("active");$(`.tab[data-view="${name}"]`)?.classList.add("active");
+  if($("#header-title"))$("#header-title").textContent=TITLES[name];try{history.replaceState(null,"",`#${name}`)}catch(e){}closeSidebar();
+  if(name==="connectors")renderConnectors();if(name==="packs")renderPacks();if(name==="pricing")renderPricing();if(name==="learn")renderLearn();if(name==="usage")renderUsage();if(name==="settings")fillSettings()}
+
+async function api(path,opts={}){const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),45000);
+  try{const headers={...(opts.headers||{})};
+    if(opts.body!=null&&!headers["Content-Type"]&&!headers["content-type"])headers["Content-Type"]="application/json";
+    const res=await fetch(`${API}${path}`,{...opts,headers,signal:ctrl.signal});const text=await res.text();
+    let data=null;try{data=text?JSON.parse(text):null}catch{data={detail:text}}
+    if(!res.ok){const detail=data?.detail||data?.message||res.statusText;throw new Error(typeof detail==="string"?detail:JSON.stringify(detail))}
+    return data}catch(e){if(e.name==="AbortError")throw new Error("Таймаут. Повторите.");
+    if(/Failed to fetch|Load failed|NetworkError/i.test(e.message||""))throw new Error("Load failed — CORS или сеть");throw e}
+  finally{clearTimeout(timer)}}
+
+function cardsHtml(cards){if(!cards?.length)return"";return `<div class="card-grid">`+cards.map(c=>`<div class="res-card"><div class="rc-title">${esc(c.title||c.name||"Карточка")}</div><div class="rc-meta">${esc(c.subtitle||c.description||"")}</div></div>`).join("")+`</div>`}
+function appendMsg(role,text,tools=[],meta={}){const box=$("#chat-messages");if(!box)return;if(!box.dataset.started){box.dataset.started="1";const h=$("#hero-text");if(h)h.style.display="none";const w=$("#hint-widgets");if(w)w.style.display="none"}
+  const div=document.createElement("div");div.className=`msg ${role==="user"?"user":"assistant"}`;
+  let toolsHtml="";if(tools?.length)toolsHtml=`<div class="tool-chips">`+tools.map(t=>{const label=t.server_id==="llm"?`llm/${t.name}`:`${t.server_id}/${t.name}`;return `<span class="tool-chip ${t.ok===false?"err":""}">${esc(label)}</span>`}).join("")+`</div>`;
+  let metaHtml="";if(meta.provider_used||meta.latency_ms!=null){metaHtml=`<div class="meta-row">`;if(meta.provider_used)metaHtml+=`<span class="provider-chip">${esc(meta.provider_used)}</span>`;if(meta.latency_ms!=null)metaHtml+=`<span class="latency">${meta.latency_ms}ms</span>`;metaHtml+=`</div>`}
+  div.innerHTML=`${esc(text||"").replace(/\n/g,"<br>")}${cardsHtml(meta.cards)}${toolsHtml}${metaHtml}`;box.appendChild(div);box.scrollTop=box.scrollHeight}
+function showTyping(){const box=$("#chat-messages");if(!box||$("#typing-ind"))return;const d=document.createElement("div");d.id="typing-ind";d.className="msg assistant";d.innerHTML=`<div class="typing"><i></i><i></i><i></i></div>`;box.appendChild(d);box.scrollTop=box.scrollHeight}
+function hideTyping(){$("#typing-ind")?.remove()}
+
+async function sendMessage(prefill){const input=$("#chat-input");if(!input)return;const text=(prefill??input.value).trim();if(!text||state.busy)return;
+  state.busy=true;if($("#send-btn"))$("#send-btn").disabled=true;if(prefill==null)input.value="";input.style.height="auto";
+  appendMsg("user",text);SFX.send();showTyping();setAvatarState("thinking");
+  try{const res=await api("/api/chat",{method:"POST",body:JSON.stringify({message:text})});hideTyping();setAvatarState("speaking");SFX.success();
+    appendMsg("assistant",res.reply||"Готово",res.tools_used||[],{provider_used:res.provider_used,latency_ms:res.latency_ms,cards:res.cards||[]});
+    if(res.provider_used)setOnline(true,res.provider_used);setTimeout(()=>setAvatarState("idle"),1100);loadConnected().catch(()=>{});loadUsage().catch(()=>{})}
+  catch(e){hideTyping();setAvatarState("idle");SFX.error();appendMsg("assistant","Ошибка: "+e.message);toast(e.message,"error");setOnline(false,"offline")}
+  finally{state.busy=false;if($("#send-btn"))$("#send-btn").disabled=false;input.focus()}}
+
+async function loadCatalog(){try{const d=await api("/api/catalog");state.servers=d.servers||[];state.presets=d.presets||[]}catch{state.servers=[{id:"weather",name:"Weather",description:"Погода",category:"demo",icon:"🌤"}]}}
+async function loadSettings(){try{state.settings=await api("/api/settings")||{}}catch{state.settings={plan_id:"free",display_name:"Demo User"}}}
+async function loadConnected(){try{state.connected=await api("/api/connected")||[]}catch{state.connected=[]}if($("#conn-badge"))$("#conn-badge").textContent=String(state.connected.length||0)}
+async function loadPacks(){try{state.packs=(await api("/api/packs")).packs||[]}catch{state.packs=[{id:"lifestyle-home",name:"Бытовая польза",description:"Еда, такси",icon:"🏠"}]}}
+async function loadPlans(){try{state.plans=(await api("/api/plans")).plans||[]}catch{state.plans=[{id:"free",name:"Старт",price:"0 ₽",features:["Чат","Демо"]}]}}
+async function loadUsage(){try{state.usage=await api("/api/usage")}catch{state.usage={total_calls:0,successful_calls:0}}renderUsage()}
+
+function renderConnectors(){const grid=$("#connectors-grid"),tabs=$("#cat-tabs");if(!grid)return;
+  const items=[...(state.servers||[]),...(state.presets||[])];const cats=["all",...new Set(items.map(i=>i.category||"other"))];
+  if(tabs){tabs.innerHTML=cats.map(c=>`<button type="button" class="cat-tab ${state.catalogCategory===c?"active":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+    $$(".cat-tab",tabs).forEach(b=>b.addEventListener("click",()=>{state.catalogCategory=b.dataset.cat;renderConnectors()}))}
+  const connectedIds=new Set((state.connected||[]).map(c=>c.id));
+  const filtered=items.filter(s=>state.catalogCategory==="all"||(s.category||"other")===state.catalogCategory);
+  grid.innerHTML=filtered.map(s=>{const on=connectedIds.has(s.id);return `<div class="connector-card"><div class="conn-ico">${s.icon||"⬡"}</div><h3>${esc(s.name||s.id)}</h3><p>${esc(s.description||"")}</p><div class="row-btns">${on?`<button type="button" class="btn btn-sm" data-disconnect="${esc(s.id)}">Отключить</button>`:`<button type="button" class="btn btn-glow btn-sm" data-connect="${esc(s.id)}">Подключить</button>`}</div></div>`}).join("")||`<p style="color:var(--muted)">Пусто</p>`;
+  grid.onclick=async e=>{const a=e.target.closest("[data-connect]"),b=e.target.closest("[data-disconnect]");try{
+    if(a){await api(`/api/connect/${a.dataset.connect}`,{method:"POST"});await loadConnected();renderConnectors();toast("Подключено","success")}
+    if(b){await api(`/api/disconnect/${b.dataset.disconnect}`,{method:"POST"});await loadConnected();renderConnectors();toast("Отключено","success")}
+  }catch(err){toast(err.message,"error")}}}
+function renderPacks(){const grid=$("#packs-grid");if(!grid)return;
+  grid.innerHTML=(state.packs||[]).map(p=>`<div class="pack-card"><div class="conn-ico">${p.icon||"◈"}</div><h3>${esc(p.name)}</h3><p>${esc(p.description||"")}</p><button type="button" class="btn btn-glow btn-sm" data-pack="${esc(p.id)}" style="margin-top:8px">Активировать</button></div>`).join("");
+  grid.onclick=async e=>{const btn=e.target.closest("[data-pack]");if(!btn)return;try{await api(`/api/packs/${btn.dataset.pack}/activate`,{method:"POST"});toast("Пакет активирован","success");showView("chat")}catch(err){toast(err.message,"error")}}}
+function renderPricing(){const grid=$("#pricing-grid");if(!grid)return;
+  grid.innerHTML=(state.plans||[]).map(p=>`<div class="price-card"><h3 style="font-size:16px;font-weight:600">${esc(p.name)}</h3><div style="font-size:22px;font-weight:600;margin:8px 0">${esc(p.price||"—")}</div><ul style="padding-left:16px;color:var(--muted);font-size:13px">${(p.features||[]).map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`).join("")}
+function renderLearn(){const list=$("#learn-list");if(!list)return;list.innerHTML=LEARN.map(x=>`<div class="learn-item"><h4>${esc(x.t)}</h4><p>${esc(x.b)}</p></div>`).join("")}
+function renderUsage(){const cards=$("#usage-cards");if(!cards)return;const u=state.usage||{};
+  cards.innerHTML=`<div class="usage-card"><div class="val">${u.total_calls??0}</div><div class="lbl">Вызовы</div></div><div class="usage-card"><div class="val">${u.successful_calls??0}</div><div class="lbl">Успешные</div></div><div class="usage-card"><div class="val">${state.connected?.length??0}</div><div class="lbl">Коннекторы</div></div><div class="usage-card"><div class="val">v3</div><div class="lbl">API</div></div>`}
+function fillSettings(){if($("#set-name"))$("#set-name").value=state.settings.display_name||"";if($("#set-plan"))$("#set-plan").value=state.settings.plan_id||"free";if($("#sfx-toggle"))$("#sfx-toggle").textContent=`Звук: ${SFX.on?"вкл":"выкл"}`}
+function renderObStep(){$$(".ob-step").forEach(el=>{el.hidden=parseInt(el.getAttribute("data-ob"),10)!==state.obStep})}
+function showOnboarding(){if(localStorage.getItem("nexus-ob-done"))return;const bd=$("#ob-backdrop");if(!bd)return;bd.hidden=false;bd.style.display="grid";state.obStep=0;renderObStep()}
+function finishOb(){const bd=$("#ob-backdrop");if(bd){bd.hidden=true;bd.setAttribute("hidden","");bd.style.display="none"}localStorage.setItem("nexus-ob-done","1");try{SFX.success()}catch(e){}api("/api/onboarding/complete",{method:"POST"}).catch(()=>{})}window.finishOb=finishOb;
+
+function initNav(){$$(".nav-item[data-view]").forEach(el=>el.addEventListener("click",e=>{e.preventDefault();showView(el.dataset.view)}));
+  $$(".tab[data-view]").forEach(t=>t.addEventListener("click",()=>showView(t.dataset.view)));
+  $("#menu-btn")?.addEventListener("click",()=>{$("#sidebar")?.classList.toggle("open");$("#overlay")?.classList.toggle("show")});
+  $("#overlay")?.addEventListener("click",closeSidebar);showView((location.hash||"#chat").replace("#","")||"chat");
+  window.addEventListener("hashchange",()=>showView((location.hash||"#chat").replace("#","")||"chat"))}
+function initChat(){const input=$("#chat-input");input?.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,120)+"px"});
+  input?.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}});
+  $("#send-btn")?.addEventListener("click",e=>{e.preventDefault();sendMessage()});
+  $("#hint-widgets")?.addEventListener("click",e=>{const w=e.target.closest("[data-prompt]");if(w)sendMessage(w.dataset.prompt)})}
+function initDemo(){$("#demo-btn")?.addEventListener("click",async()=>{try{const res=await api("/api/demo/activate",{method:"POST"});await loadConnected();toast("Демо: "+(res.connected||[]).join(", "),"success");showView("chat");appendMsg("assistant","Демо включено. Попробуйте погоду или «провайдер openrouter».")}catch(e){toast(e.message,"error")}})}
+function initLifestyle(){$$(".life-card").forEach(card=>card.addEventListener("click",()=>{showView("chat");setTimeout(()=>sendMessage(card.dataset.prompt),80)}))}
+function initBusiness(){$("#biz-submit")?.addEventListener("click",async()=>{try{const r=await api("/api/business/register",{method:"POST",body:JSON.stringify({name:$("#biz-name")?.value,type:$("#biz-type")?.value,city:$("#biz-city")?.value,services:$("#biz-services")?.value,contact:$("#biz-contact")?.value})});if($("#biz-result"))$("#biz-result").textContent=r.message||"Ок";toast("Заявка отправлена","success")}catch(e){toast(e.message,"error")}})}
+function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const btn=$("#voice-btn");if(!btn)return;
+  if(!SR){btn.addEventListener("click",()=>toast("Голос: Chrome/Safari","info"));return}const rec=new SR();rec.lang="ru-RU";let listening=false;
+  const stop=()=>{listening=false;btn.classList.remove("listening")};rec.onresult=ev=>sendMessage(ev.results[0][0].transcript);rec.onend=stop;rec.onerror=()=>{stop();toast("Не распознано","error")};
+  btn.addEventListener("click",()=>{if(listening){try{rec.stop()}catch(e){}return}listening=true;btn.classList.add("listening");SFX.soft();try{rec.start()}catch{stop()}})}
+function initSettings(){$("#save-settings")?.addEventListener("click",async()=>{try{await api("/api/settings",{method:"POST",body:JSON.stringify({display_name:$("#set-name")?.value,grok_api_key:$("#set-grok")?.value||undefined,plan_id:$("#set-plan")?.value})});await loadSettings();toast("Сохранено","success")}catch(e){toast(e.message,"error")}});
+  $("#sfx-toggle")?.addEventListener("click",()=>{SFX.on=!SFX.on;fillSettings();SFX.soft()})}
+function initOnboarding(){$$("[data-ob-next]").forEach(btn=>btn.addEventListener("click",()=>{state.obStep=Math.min((state.obStep||0)+1,2);renderObStep()}));
+  $$(".ob-role").forEach(b=>b.addEventListener("click",()=>{state.obStep=2;renderObStep()}));$("#ob-finish")?.addEventListener("click",finishOb)}
+
+(async function boot(){
+  initNav();initChat();initDemo();initLifestyle();initBusiness();initVoice();initSettings();initOnboarding();
+  try{await Promise.all([loadCatalog(),loadSettings(),loadConnected(),loadPacks(),loadPlans(),loadUsage()]);setOnline(true,state.settings.providers?.active||state.settings.llm_provider||"online")}catch{setOnline(false,"offline")}
+  renderConnectors();renderPacks();renderPricing();renderLearn();renderUsage();
+  try{const hist=await api("/api/history");const msgs=hist.messages||[];if(msgs.length){msgs.forEach(m=>appendMsg(m.role,m.content||"",m.tools||[]))}}catch(e){}
+  showOnboarding();
+  api("/api/health").then(h=>setOnline(true,h.llm_provider||h.version||"online")).catch(()=>setOnline(false,"offline"));
+  console.info("Nexus Premium ready",API);
+})();
+
+</script>
+</body>
+</html>
